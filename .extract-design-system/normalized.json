@@ -1,0 +1,50 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/",
+    "extractedAt": "2026-05-19T11:04:55.501Z",
+    "extractor": "dembrandt"
+  },
+  "colors": {
+    "primary": "rgb(0, 0, 0)",
+    "secondary": "rgba(0, 0, 0, 0)",
+    "palette": [
+      "rgb(0, 0, 0)",
+      "rgba(0, 0, 0, 0)"
+    ],
+    "cssVariables": {}
+  },
+  "typography": {
+    "headingFont": "YouTube Noto",
+    "bodyFont": "YouTube Noto"
+  },
+  "spacing": {
+    "scale": [
+      "1px",
+      "2.5px",
+      "4px",
+      "5px",
+      "6px",
+      "7px",
+      "8px",
+      "10px",
+      "11px",
+      "12px",
+      "15px",
+      "16px",
+      "18px",
+      "20px",
+      "24px",
+      "32px",
+      "50px",
+      "56px",
+      "100px",
+      "120px"
+    ]
+  },
+  "radius": {
+    "scale": []
+  },
+  "shadows": {
+    "scale": []
+  }
+}

@@ -1,0 +1,26 @@
+:root {
+  --color-primary: rgb(0, 0, 0);
+  --color-secondary: rgba(0, 0, 0, 0);
+  --font-heading: YouTube Noto;
+  --font-body: YouTube Noto;
+  --space-1: 1px;
+  --space-2: 2.5px;
+  --space-3: 4px;
+  --space-4: 5px;
+  --space-5: 6px;
+  --space-6: 7px;
+  --space-7: 8px;
+  --space-8: 10px;
+  --space-9: 11px;
+  --space-10: 12px;
+  --space-11: 15px;
+  --space-12: 16px;
+  --space-13: 18px;
+  --space-14: 20px;
+  --space-15: 24px;
+  --space-16: 32px;
+  --space-17: 50px;
+  --space-18: 56px;
+  --space-19: 100px;
+  --space-20: 120px;
+}
