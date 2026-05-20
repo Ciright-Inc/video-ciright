@@ -88,9 +88,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             });
             token.channelId = channel.id;
             token.channelHandle = channel.handle;
+            token.picture = channel.avatarUrl ?? dbUser.image ?? undefined;
+            token.name = channel.name ?? dbUser.name ?? undefined;
           } else {
             token.channelId = dbUser.channel.id;
             token.channelHandle = dbUser.channel.handle;
+            token.picture =
+              dbUser.channel.avatarUrl ?? dbUser.image ?? undefined;
+            token.name = dbUser.channel.name ?? dbUser.name ?? undefined;
           }
         }
       }
@@ -103,6 +108,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.channelId = (token.channelId as string | null) ?? null;
         session.user.channelHandle =
           (token.channelHandle as string | null) ?? null;
+        if (token.picture !== undefined) {
+          session.user.image = (token.picture as string | null) ?? null;
+        }
+        if (token.name !== undefined) {
+          session.user.name = (token.name as string | null) ?? null;
+        }
       }
       if (typeof token.exp === "number") {
         session.expiresAt = token.exp * 1000;

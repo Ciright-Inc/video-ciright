@@ -1,9 +1,46 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  CirclePlayIcon,
+  ImagePlusIcon,
+  InfoIcon,
+  VideoIcon,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LabeledInput } from "@/components/ui/labeled-input";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { TagsInput } from "@/components/ui/tags-input";
+import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { VisibilitySelect } from "@/components/upload/VisibilitySelect";
+import { captureVideoThumbnail } from "@/lib/capture-video-thumbnail";
+import { cn } from "@/lib/utils";
+import {
+  UploadProgressPanel,
+  type UploadStep,
+} from "@/components/upload/UploadProgressPanel";
+
+const VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
+const THUMBNAIL_MAX_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = "image/jpeg,image/png,image/webp,image/gif";
 
 const SAMPLE_VIDEO_URL =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
@@ -15,57 +52,300 @@ const ACCEPTED_VIDEO_TYPES = [
   "video/x-matroska",
 ];
 
+const TITLE_MAX = 100;
+const DESC_MAX = 5000;
+const DRAFT_KEY = "upload-video-draft";
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fileExtension(name: string): string {
+  const ext = name.split(".").pop();
+  return ext ? ext.toUpperCase() : "VIDEO";
+}
+
 export function UploadForm() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState("PUBLIC");
-  const [tags, setTags] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [useExternalUrl, setUseExternalUrl] = useState(false);
   const [videoUrl, setVideoUrl] = useState(SAMPLE_VIDEO_URL);
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [customThumbnailFile, setCustomThumbnailFile] = useState<File | null>(
+    null
+  );
+  const [autoThumbnailBlob, setAutoThumbnailBlob] = useState<Blob | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(
+    null
+  );
+  const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
+  const [uploadStep, setUploadStep] = useState<UploadStep | null>(null);
+  const [fileUploadPercent, setFileUploadPercent] = useState<number | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
 
-  async function uploadToS3(file: File): Promise<string> {
-    const presignRes = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fileName: file.name,
-        contentType: file.type,
-        fileSize: file.size,
-      }),
+  useEffect(() => {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw) as {
+        title?: string;
+        description?: string;
+        visibility?: string;
+        tags?: string | string[];
+        useExternalUrl?: boolean;
+        videoUrl?: string;
+      };
+      if (draft.title) setTitle(draft.title);
+      if (draft.description) setDescription(draft.description);
+      if (draft.visibility) setVisibility(draft.visibility);
+      if (draft.tags) {
+        setTags(
+          Array.isArray(draft.tags)
+            ? draft.tags
+            : draft.tags
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean)
+        );
+      }
+      if (draft.useExternalUrl) setUseExternalUrl(draft.useExternalUrl);
+      if (draft.videoUrl) setVideoUrl(draft.videoUrl);
+    } catch {
+      /* ignore corrupt draft */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!videoFile) {
+      setVideoPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(videoFile);
+    setVideoPreviewUrl(url);
+    setIsPreviewPlaying(false);
+    return () => URL.revokeObjectURL(url);
+  }, [videoFile]);
+
+  function togglePreviewPlayback() {
+    const video = videoPreviewRef.current;
+    if (!video) return;
+    if (video.paused) {
+      void video.play();
+    } else {
+      video.pause();
+    }
+  }
+
+  function setThumbnailPreviewFromBlob(blob: Blob) {
+    setThumbnailPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(blob);
     });
+  }
 
-    const presignData = await presignRes.json();
-    if (!presignRes.ok) {
-      throw new Error(presignData.error ?? "Failed to prepare upload");
+  function setThumbnailPreviewFromFile(file: File) {
+    setThumbnailPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function clearThumbnailPreview() {
+    setThumbnailPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }
+
+  async function generateThumbnailFromVideo(file: File) {
+    setGeneratingThumbnail(true);
+    try {
+      const blob = await captureVideoThumbnail(file);
+      setAutoThumbnailBlob(blob);
+      setCustomThumbnailFile(null);
+      setThumbnailPreviewFromBlob(blob);
+    } catch {
+      setAutoThumbnailBlob(null);
+      clearThumbnailPreview();
+      toast.error("Could not generate thumbnail from video");
+    } finally {
+      setGeneratingThumbnail(false);
+    }
+  }
+
+  async function handleVideoFileChange(file: File | null) {
+    setCustomThumbnailFile(null);
+    setAutoThumbnailBlob(null);
+    if (!file) {
+      setVideoFile(null);
+      clearThumbnailPreview();
+      return;
+    }
+    if (file.size > VIDEO_MAX_BYTES) {
+      toast.error("Video must be 1 GB or smaller");
+      return;
+    }
+    setVideoFile(file);
+    await generateThumbnailFromVideo(file);
+  }
+
+  function handleCustomThumbnailChange(file: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > THUMBNAIL_MAX_BYTES) {
+      toast.error("Thumbnail must be 10 MB or smaller");
+      return;
+    }
+    setCustomThumbnailFile(file);
+    setThumbnailPreviewFromFile(file);
+  }
+
+  async function restoreVideoFrameThumbnail() {
+    if (!videoFile) {
+      setCustomThumbnailFile(null);
+      clearThumbnailPreview();
+      return;
+    }
+    setCustomThumbnailFile(null);
+    await generateThumbnailFromVideo(videoFile);
+  }
+
+  function saveDraft() {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        title,
+        description,
+        visibility,
+        tags,
+        useExternalUrl,
+        videoUrl,
+      })
+    );
+    toast.success("Draft saved");
+  }
+
+  async function resolveThumbnailForUpload(): Promise<File> {
+    if (customThumbnailFile) {
+      return customThumbnailFile;
     }
 
-    setUploadProgress("Uploading to S3…");
-
-    const uploadRes = await fetch(presignData.uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
-
-    if (!uploadRes.ok) {
-      throw new Error("S3 upload failed");
+    if (videoFile) {
+      const blob =
+        autoThumbnailBlob ?? (await captureVideoThumbnail(videoFile));
+      return new File([blob], `thumbnail-${Date.now()}.jpg`, {
+        type: "image/jpeg",
+      });
     }
 
-    return presignData.publicUrl as string;
+    if (useExternalUrl && videoUrl.trim()) {
+      try {
+        const blob = await captureVideoThumbnail(videoUrl.trim());
+        return new File([blob], `thumbnail-${Date.now()}.jpg`, {
+          type: "image/jpeg",
+        });
+      } catch {
+        throw new Error(
+          "Could not capture thumbnail from external URL. Upload a video file or add a custom thumbnail."
+        );
+      }
+    }
+
+    throw new Error("Add a video or upload a thumbnail image");
+  }
+
+  function uploadFileViaApi(
+    file: File,
+    kind: "video" | "thumbnail",
+    onProgress: (percent: number) => void
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("kind", kind);
+
+      xhr.open("POST", "/api/upload/file");
+      xhr.upload.addEventListener("progress", (event) => {
+        if (!event.lengthComputable) return;
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      });
+
+      xhr.addEventListener("load", () => {
+        let data: { publicUrl?: string; error?: string } = {};
+        try {
+          data = JSON.parse(xhr.responseText) as {
+            publicUrl?: string;
+            error?: string;
+          };
+        } catch {
+          /* non-JSON body */
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300 && data.publicUrl) {
+          resolve(data.publicUrl);
+          return;
+        }
+
+        reject(
+          new Error(
+            data.error ??
+              (xhr.status === 413
+                ? "File is too large for upload"
+                : `Upload failed (${xhr.status || "network error"})`)
+          )
+        );
+      });
+
+      xhr.addEventListener("error", () =>
+        reject(new Error("Network error while uploading. Try again."))
+      );
+      xhr.addEventListener("abort", () =>
+        reject(new Error("Upload was cancelled"))
+      );
+
+      xhr.send(formData);
+    });
+  }
+
+  async function uploadToStorage(
+    file: File,
+    step: Extract<UploadStep, "uploading-video" | "uploading-thumbnail">
+  ): Promise<string> {
+    const kind = file.type.startsWith("image/") ? "thumbnail" : "video";
+
+    setUploadStep(step);
+    setFileUploadPercent(0);
+
+    const publicUrl = await uploadFileViaApi(file, kind, setFileUploadPercent);
+
+    setFileUploadPercent(100);
+    return publicUrl;
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setUploadProgress(null);
+    setUploadStep("preparing");
+    setFileUploadPercent(null);
 
     try {
       let finalVideoUrl = videoUrl;
@@ -74,12 +354,21 @@ export function UploadForm() {
         if (!videoFile) {
           throw new Error("Select a video file to upload");
         }
-        finalVideoUrl = await uploadToS3(videoFile);
+        finalVideoUrl = await uploadToStorage(videoFile, "uploading-video");
       } else if (!finalVideoUrl.trim()) {
         throw new Error("Video URL is required");
       }
 
-      setUploadProgress("Saving video…");
+      setUploadStep("preparing");
+      setFileUploadPercent(null);
+      const thumbnailFile = await resolveThumbnailForUpload();
+      const finalThumbnailUrl = await uploadToStorage(
+        thumbnailFile,
+        "uploading-thumbnail"
+      );
+
+      setUploadStep("saving");
+      setFileUploadPercent(null);
 
       const res = await fetch("/api/videos", {
         method: "POST",
@@ -89,116 +378,456 @@ export function UploadForm() {
           description,
           visibility,
           videoUrl: finalVideoUrl,
-          thumbnailUrl:
-            thumbnailUrl || `https://picsum.photos/seed/${Date.now()}/640/360`,
-          tags: tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
+          thumbnailUrl: finalThumbnailUrl,
+          tags,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed");
 
+      localStorage.removeItem(DRAFT_KEY);
       router.push(`/watch/${data.id}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setLoading(false);
-      setUploadProgress(null);
+      setUploadStep(null);
+      setFileUploadPercent(null);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto flex max-w-xl flex-col gap-4">
-      <LabeledInput
-        label="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink">Description</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={4}
-          className="w-full rounded-[var(--radius-md)] border border-hairline bg-surface-card px-3 py-2 text-sm text-ink outline-none focus:border-primary"
-        />
-      </div>
-      <div className="flex flex-col gap-3">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
-          <input
-            type="checkbox"
-            checked={useExternalUrl}
-            onChange={(e) => setUseExternalUrl(e.target.checked)}
-            className="rounded border-hairline"
-          />
-          Use external video URL instead of S3 upload
-        </label>
-
-        {!useExternalUrl ? (
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink">Video file</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED_VIDEO_TYPES.join(",")}
-              onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-              className="text-sm text-ink file:mr-3 file:rounded-[var(--radius-md)] file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-on-primary"
-            />
-            {videoFile && (
-              <p className="text-xs text-muted-foreground">
-                {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(1)} MB)
-              </p>
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-8"
+      aria-busy={loading}
+    >
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-[32px] md:leading-10">
+            Upload video
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Ready to share your creativity with the world? Fill in the details
+            below.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full px-6"
+            onClick={saveDraft}
+            disabled={loading}
+          >
+            Save draft
+          </Button>
+          <Button
+            type="submit"
+            className="rounded-full px-6 shadow-md"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Spinner data-icon="inline-start" />
+                Publishing…
+              </>
+            ) : (
+              "Publish video"
             )}
-            <p className="text-xs text-muted-foreground">
-              Uploaded to S3 bucket <span className="font-mono">video-ciright</span> (mp4, webm, mov, mkv; max 500 MB)
-            </p>
-          </div>
-        ) : (
-          <LabeledInput
-            label="Video URL"
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            required
-            placeholder="https://... or .m3u8 for HLS"
-          />
-        )}
-      </div>
-      <LabeledInput
-        label="Thumbnail URL (optional)"
-        value={thumbnailUrl}
-        onChange={(e) => setThumbnailUrl(e.target.value)}
-        placeholder="https://..."
-      />
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink">Visibility</label>
-        <select
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value)}
-          className="h-10 rounded-[var(--radius-md)] border border-hairline bg-surface-card px-3 text-sm text-ink"
-        >
-          <option value="PUBLIC">Public</option>
-          <option value="UNLISTED">Unlisted</option>
-          <option value="PRIVATE">Private</option>
-        </select>
-      </div>
-      <LabeledInput
-        label="Tags (comma-separated)"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-        placeholder="tutorial, nextjs"
-      />
-      {uploadProgress && (
-        <p className="text-xs text-muted-foreground">{uploadProgress}</p>
+          </Button>
+        </div>
+      </header>
+
+      {loading && uploadStep && (
+        <UploadProgressPanel
+          step={uploadStep}
+          skipsVideoUpload={useExternalUrl}
+          filePercent={fileUploadPercent}
+          videoFileName={videoFile?.name}
+        />
       )}
-      {error && <p className="text-sm text-error">{error}</p>}
-      <Button type="submit" disabled={loading}>
-        {loading ? uploadProgress ?? "Publishing…" : "Publish video"}
-      </Button>
+
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-6 transition-opacity duration-300 motion-reduce:transition-none lg:grid-cols-12 lg:gap-6",
+          loading && "pointer-events-none opacity-60"
+        )}
+      >
+        <div className="flex flex-col gap-6 lg:col-span-7">
+          <Card className="border-border bg-card shadow-sm">
+            <CardHeader className="border-b border-border pb-0">
+              <CardTitle className="text-lg font-semibold">Details</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="upload-title">
+                    Title (required)
+                  </FieldLabel>
+                  <div className="relative">
+                    <Input
+                      id="upload-title"
+                      value={title}
+                      onChange={(e) =>
+                        setTitle(e.target.value.slice(0, TITLE_MAX))
+                      }
+                      placeholder="Add a title that describes your video"
+                      required
+                      className="h-11 pr-16 text-base"
+                      aria-invalid={!!error && !title.trim()}
+                    />
+                    <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-muted-foreground">
+                      {title.length}/{TITLE_MAX}
+                    </span>
+                  </div>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="upload-description">
+                    Description
+                  </FieldLabel>
+                  <div className="relative">
+                    <Textarea
+                      id="upload-description"
+                      value={description}
+                      onChange={(e) =>
+                        setDescription(e.target.value.slice(0, DESC_MAX))
+                      }
+                      placeholder="Tell viewers about your video"
+                      rows={6}
+                      className="min-h-[140px] resize-none pb-8 text-base"
+                    />
+                    <span className="pointer-events-none absolute right-4 bottom-3 text-sm text-muted-foreground">
+                      {description.length}/{DESC_MAX}
+                    </span>
+                  </div>
+                </Field>
+              </FieldGroup>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                Visibility &amp; Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              <Field>
+                <FieldLabel htmlFor="upload-visibility">
+                  Who can see this video?
+                </FieldLabel>
+                <VisibilitySelect
+                  id="upload-visibility"
+                  value={visibility}
+                  onValueChange={setVisibility}
+                  disabled={loading}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="upload-tags">Tags</FieldLabel>
+                <TagsInput
+                  id="upload-tags"
+                  value={tags}
+                  onChange={setTags}
+                  placeholder="tutorial, nextjs, design"
+                />
+                <FieldDescription>
+                  Press Enter or comma to add a tag. Paste comma-separated
+                  lists to add several at once.
+                </FieldDescription>
+              </Field>
+
+              <Separator />
+
+              <Field orientation="horizontal">
+                <Switch
+                  id="external-url"
+                  checked={useExternalUrl}
+                  onCheckedChange={setUseExternalUrl}
+                />
+                <FieldLabel
+                  htmlFor="external-url"
+                  className="cursor-pointer font-normal"
+                >
+                  Use external video URL instead of S3 upload
+                </FieldLabel>
+              </Field>
+
+              {useExternalUrl && (
+                <Field>
+                  <FieldLabel htmlFor="upload-video-url">Video URL</FieldLabel>
+                  <Input
+                    id="upload-video-url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://... or .m3u8 for HLS"
+                    required
+                    className="h-11 text-base"
+                  />
+                  <FieldDescription>
+                    Paste a direct video URL or HLS stream address.
+                  </FieldDescription>
+                </Field>
+              )}
+            </CardContent>
+          </Card>
+
+          <Alert className="border-primary/20 bg-primary/5">
+            <InfoIcon className="text-primary" />
+            <AlertTitle className="text-primary">Pro tip</AlertTitle>
+            <AlertDescription className="text-primary/80">
+              Adding descriptive tags and a rich description helps viewers
+              discover your content.
+            </AlertDescription>
+          </Alert>
+        </div>
+
+        <div className="flex flex-col gap-6 lg:col-span-5">
+          <Card className="gap-0 overflow-hidden border-border bg-card p-0 py-0 shadow-sm">
+            <div
+              className={cn(
+                "group/preview relative aspect-video w-full overflow-hidden rounded-t-xl bg-surface-dark",
+                !useExternalUrl && "cursor-pointer"
+              )}
+              onClick={() => {
+                if (videoPreviewUrl) {
+                  togglePreviewPlayback();
+                } else if (!useExternalUrl) {
+                  fileInputRef.current?.click();
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                if (videoPreviewUrl) {
+                  togglePreviewPlayback();
+                } else if (!useExternalUrl) {
+                  fileInputRef.current?.click();
+                }
+              }}
+              role={!useExternalUrl ? "button" : undefined}
+              tabIndex={!useExternalUrl ? 0 : undefined}
+              aria-label={
+                !useExternalUrl
+                  ? videoPreviewUrl
+                    ? isPreviewPlaying
+                      ? "Pause video preview"
+                      : "Play video preview"
+                    : "Choose video file to upload"
+                  : undefined
+              }
+            >
+              {videoPreviewUrl ? (
+                <video
+                  ref={videoPreviewRef}
+                  src={videoPreviewUrl}
+                  className="absolute inset-0 size-full object-cover opacity-90"
+                  playsInline
+                  preload="metadata"
+                  onPlay={() => setIsPreviewPlaying(true)}
+                  onPause={() => setIsPreviewPlaying(false)}
+                  onEnded={() => setIsPreviewPlaying(false)}
+                />
+              ) : (
+                <div
+                  className="absolute inset-0 bg-linear-to-br from-(--color-gradient-sky-light) to-(--color-gradient-sky-mid)"
+                  aria-hidden
+                />
+              )}
+              {(!videoPreviewUrl || !isPreviewPlaying) && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="flex size-16 items-center justify-center rounded-full border border-white/40 bg-white/20 backdrop-blur-md transition-transform group-hover/preview:scale-105">
+                    <CirclePlayIcon className="text-white" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <CardContent className="flex flex-col gap-6 p-6">
+              {!useExternalUrl ? (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ACCEPTED_VIDEO_TYPES.join(",")}
+                    className="sr-only"
+                    onChange={(e) =>
+                      void handleVideoFileChange(e.target.files?.[0] ?? null)
+                    }
+                  />
+                  {videoFile ? (
+                    <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/40 p-4">
+                      <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <VideoIcon className="text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-sm font-semibold">
+                            {videoFile.name}
+                          </p>
+                          <Badge
+                            variant="secondary"
+                            className="shrink-0 bg-primary/10 text-primary"
+                          >
+                            Ready
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(videoFile.size)} •{" "}
+                          {fileExtension(videoFile.name)}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Change
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="relative w-full overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted/30">
+                      <button
+                        type="button"
+                        className="flex w-full flex-col items-center justify-center gap-2 px-4 py-8 transition-colors hover:bg-muted/50"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={loading}
+                      >
+                        <VideoIcon className="text-muted-foreground" />
+                        <span className="text-sm font-semibold">
+                          Choose video file
+                        </span>
+                        <span className="text-center text-xs text-muted-foreground">
+                          MP4, WebM, MOV, MKV — max 1 GB
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Video will be loaded from the external URL you provided.
+                </p>
+              )}
+
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold">Thumbnail</h3>
+                  {customThumbnailFile && videoFile && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto px-2 py-1 text-xs"
+                      onClick={() => void restoreVideoFrameThumbnail()}
+                      disabled={generatingThumbnail || loading}
+                    >
+                      Use video frame
+                    </Button>
+                  )}
+                </div>
+
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept={ACCEPTED_IMAGE_TYPES}
+                  className="sr-only"
+                  onChange={(e) => {
+                    handleCustomThumbnailChange(e.target.files?.[0] ?? null);
+                    e.target.value = "";
+                  }}
+                />
+
+                <div
+                  className={cn(
+                    "relative aspect-video overflow-hidden rounded-xl",
+                    thumbnailPreviewUrl
+                      ? "border-0"
+                      : "border-2 border-dashed border-border bg-muted/30"
+                  )}
+                >
+                  {generatingThumbnail ? (
+                    <div className="flex size-full flex-col items-center justify-center gap-2">
+                      <Spinner />
+                      <span className="text-xs text-muted-foreground">
+                        Capturing frame from video…
+                      </span>
+                    </div>
+                  ) : thumbnailPreviewUrl ? (
+                    <>
+                      <img
+                        src={thumbnailPreviewUrl}
+                        alt="Video thumbnail preview"
+                        className="size-full object-cover"
+                      />
+                      <div className="absolute right-2 bottom-2 flex gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => thumbnailInputRef.current?.click()}
+                          disabled={loading}
+                        >
+                          Change
+                        </Button>
+                        {customThumbnailFile && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void restoreVideoFrameThumbnail()}
+                            disabled={loading || !videoFile}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                      {!customThumbnailFile && videoFile && (
+                        <Badge
+                          variant="secondary"
+                          className="absolute top-2 left-2 bg-background/90 text-xs"
+                        >
+                          From video
+                        </Badge>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="flex size-full flex-col items-center justify-center gap-2 p-4 transition-colors hover:bg-muted/50"
+                      onClick={() => thumbnailInputRef.current?.click()}
+                      disabled={loading}
+                    >
+                      <ImagePlusIcon className="text-muted-foreground" />
+                      <span className="text-sm font-semibold">
+                        Upload thumbnail
+                      </span>
+                      <span className="text-center text-xs text-muted-foreground">
+                        {videoFile
+                          ? "Or wait — a frame is captured when you pick a video"
+                          : "16:9 image, max 10 MB"}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Upload failed</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
     </form>
   );
 }

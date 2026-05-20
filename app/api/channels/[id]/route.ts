@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getChannelById } from "@/lib/data/channels";
 import { slugifyHandle } from "@/lib/format";
+import { deleteObject, tryExtractKeyFromPublicObjectUrl } from "@/lib/s3";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -86,6 +87,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
+  const existing = await prisma.channel.findUnique({
+    where: { id },
+    select: { avatarUrl: true, bannerUrl: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const updated = await prisma.channel.update({
     where: { id },
     data,
@@ -94,6 +103,43 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       _count: { select: { subscribers: true, videos: true } },
     },
   });
+
+  const avatarChanged =
+    Object.prototype.hasOwnProperty.call(data, "avatarUrl") &&
+    existing.avatarUrl !== updated.avatarUrl;
+  const bannerChanged =
+    Object.prototype.hasOwnProperty.call(data, "bannerUrl") &&
+    existing.bannerUrl !== updated.bannerUrl;
+
+  const oldAvatarKey =
+    avatarChanged && existing.avatarUrl
+      ? tryExtractKeyFromPublicObjectUrl(existing.avatarUrl)
+      : null;
+  const oldBannerKey =
+    bannerChanged && existing.bannerUrl
+      ? tryExtractKeyFromPublicObjectUrl(existing.bannerUrl)
+      : null;
+  const newAvatarKey = updated.avatarUrl
+    ? tryExtractKeyFromPublicObjectUrl(updated.avatarUrl)
+    : null;
+  const newBannerKey = updated.bannerUrl
+    ? tryExtractKeyFromPublicObjectUrl(updated.bannerUrl)
+    : null;
+
+  const keysToDelete = [oldAvatarKey, oldBannerKey].filter(
+    (key): key is string =>
+      Boolean(key) && key !== newAvatarKey && key !== newBannerKey
+  );
+
+  await Promise.allSettled(
+    keysToDelete.map(async (key) => {
+      try {
+        await deleteObject(key);
+      } catch (err) {
+        console.error("Failed to delete replaced channel asset:", key, err);
+      }
+    })
+  );
 
   return NextResponse.json(updated);
 }

@@ -9,8 +9,10 @@ import {
   isAllowedVideoContentType,
 } from "@/lib/s3";
 
-const VIDEO_MAX_BYTES = 500 * 1024 * 1024;
-const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
+const THUMBNAIL_MAX_BYTES = 10 * 1024 * 1024;
+const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
+const BANNER_MAX_BYTES = 50 * 1024 * 1024;
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
       fileName?: string;
       contentType?: string;
       fileSize?: number;
-      kind?: "video" | "channel-asset";
+      kind?: "video" | "thumbnail" | "channel-asset";
       assetType?: "avatar" | "banner";
     };
 
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
     if (kind === "video") {
       if (fileSize > VIDEO_MAX_BYTES) {
         return NextResponse.json(
-          { error: "File exceeds 500 MB limit" },
+          { error: "File exceeds 1 GB limit" },
           { status: 413 }
         );
       }
@@ -67,17 +69,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ uploadUrl, key, publicUrl });
     }
 
-    if (kind === "channel-asset") {
-      if (fileSize > IMAGE_MAX_BYTES) {
+    if (kind === "thumbnail") {
+      if (fileSize > THUMBNAIL_MAX_BYTES) {
         return NextResponse.json(
-          { error: "Image exceeds 10 MB limit" },
+          { error: "Thumbnail exceeds 10 MB limit" },
           { status: 413 }
         );
       }
+      if (!isAllowedImageContentType(contentType)) {
+        return NextResponse.json(
+          { error: "Unsupported image format" },
+          { status: 400 }
+        );
+      }
+      const key = buildObjectKey(session.user.channelId, fileName);
+      const uploadUrl = await createPresignedUploadUrl({ key, contentType });
+      const publicUrl = getPublicObjectUrl(key);
+      return NextResponse.json({ uploadUrl, key, publicUrl });
+    }
+
+    if (kind === "channel-asset") {
       if (assetType !== "avatar" && assetType !== "banner") {
         return NextResponse.json(
           { error: "assetType must be avatar or banner" },
           { status: 400 }
+        );
+      }
+      const maxBytes =
+        assetType === "avatar" ? AVATAR_MAX_BYTES : BANNER_MAX_BYTES;
+      if (fileSize > maxBytes) {
+        return NextResponse.json(
+          {
+            error:
+              assetType === "avatar"
+                ? "Avatar exceeds 10 MB limit"
+                : "Banner exceeds 50 MB limit",
+          },
+          { status: 413 }
         );
       }
       if (!isAllowedImageContentType(contentType)) {

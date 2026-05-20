@@ -14,10 +14,6 @@ export default async function ProfileChannelPage() {
 
   return (
     <div>
-      <h2 className="mb-2 text-lg font-semibold text-ink">Channel settings</h2>
-      <p className="mb-6 text-sm text-body">
-        Update how your channel appears to viewers. Upload images or paste URLs.
-      </p>
       <ChannelForm
         channelId={channel.id}
         initial={{

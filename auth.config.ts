@@ -21,6 +21,12 @@ export const authConfig = {
           (token.channelId as string | null | undefined) ?? null;
         session.user.channelHandle =
           (token.channelHandle as string | null | undefined) ?? null;
+        if (token.picture !== undefined) {
+          session.user.image = (token.picture as string | null) ?? null;
+        }
+        if (token.name !== undefined) {
+          session.user.name = (token.name as string | null) ?? null;
+        }
       }
       if (typeof token.exp === "number") {
         session.expiresAt = token.exp * 1000;

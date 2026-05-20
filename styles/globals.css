@@ -178,6 +178,18 @@ a {
   --accent-foreground: var(--color-ink);
   --destructive: var(--color-error);
   --destructive-foreground: var(--color-on-dark);
+  --toast-error-bg: color-mix(in srgb, #dc2626 8%, var(--color-canvas));
+  --toast-error-border: color-mix(in srgb, #dc2626 22%, var(--color-canvas));
+  --toast-error-text: #b91c1c;
+  --toast-warning-bg: color-mix(in srgb, var(--color-warning) 10%, var(--color-canvas));
+  --toast-warning-border: color-mix(in srgb, var(--color-warning) 28%, var(--color-canvas));
+  --toast-warning-text: var(--color-warning);
+  --toast-success-bg: color-mix(in srgb, var(--color-success) 10%, var(--color-canvas));
+  --toast-success-border: color-mix(in srgb, var(--color-success) 28%, var(--color-canvas));
+  --toast-success-text: var(--color-success);
+  --toast-info-bg: color-mix(in srgb, var(--color-primary) 8%, var(--color-canvas));
+  --toast-info-border: color-mix(in srgb, var(--color-primary) 22%, var(--color-canvas));
+  --toast-info-text: var(--color-primary);
   --border: var(--color-hairline);
   --input: var(--color-hairline);
   --ring: var(--color-primary);
@@ -201,4 +213,26 @@ a {
   html {
     @apply font-sans;
   }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+@utility cn-toast {
+  font-family: var(--font-sans);
+  box-shadow: var(--shadow-card);
+}
+
+[data-sonner-toast][data-styled="true"] [data-description] {
+  color: var(--color-muted-foreground);
+}
+
+[data-rich-colors="true"][data-sonner-toast][data-styled="true"] [data-description] {
+  color: inherit;
+  opacity: 0.88;
 }
