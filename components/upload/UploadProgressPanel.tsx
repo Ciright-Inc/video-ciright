@@ -225,7 +225,7 @@ export function UploadProgressPanel({
                   aria-hidden
                 >
                   {done ? (
-                    <CheckIcon />
+                    <CheckIcon className="size-3.5" strokeWidth={2.5} />
                   ) : active ? (
                     <Spinner className="text-primary-foreground" />
                   ) : (

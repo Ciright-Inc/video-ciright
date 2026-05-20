@@ -36,6 +36,24 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
   }
 
+  if (typeof body.duration === "number" && body.duration > 0) {
+    const existing = await prisma.video.findUnique({
+      where: { id },
+      select: { duration: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (existing.duration == null) {
+      const video = await prisma.video.update({
+        where: { id },
+        data: { duration: Math.round(body.duration) },
+      });
+      return NextResponse.json({ duration: video.duration });
+    }
+    return NextResponse.json({ duration: existing.duration });
+  }
+
   if (!session?.user?.channelId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -78,7 +96,6 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     );
   } catch (e) {
     const legacyKey =
-      tryExtractKeyFromPublicObjectUrl(existing.originalUrl ?? "") ??
       tryExtractKeyFromPublicObjectUrl(existing.videoUrl);
     if (legacyKey) {
       try {

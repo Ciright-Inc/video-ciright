@@ -95,5 +95,5 @@ export function WatchPlayerSection({
     );
   }
 
-  return <VideoPlayer src={playbackUrl} poster={poster} />;
+  return <VideoPlayer src={playbackUrl} poster={poster} videoId={videoId} />;
 }

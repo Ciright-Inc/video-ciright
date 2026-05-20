@@ -13,6 +13,7 @@ import { formatDuration } from "@/lib/format";
 interface VideoPlayerProps {
   src: string;
   poster?: string | null;
+  videoId?: string;
 }
 
 const SEEK_STEP = 10;
@@ -26,7 +27,7 @@ function formatPlaybackSpeed(rate: number) {
 type SeekFlash = { side: "left" | "right"; seconds: number; id: number };
 type SourceStatus = "loading" | "ready" | "error";
 
-export function VideoPlayer({ src, poster }: VideoPlayerProps) {
+export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<import("hls.js").default | null>(null);
@@ -36,6 +37,7 @@ export function VideoPlayer({ src, poster }: VideoPlayerProps) {
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastClickRef = useRef(0);
   const speedMenuRef = useRef<HTMLDivElement>(null);
+  const durationSyncedRef = useRef(false);
 
   const [sourceStatus, setSourceStatus] = useState<SourceStatus>(
     src ? "loading" : "error"
@@ -243,6 +245,10 @@ export function VideoPlayer({ src, poster }: VideoPlayerProps) {
   }, [src]);
 
   useEffect(() => {
+    durationSyncedRef.current = false;
+  }, [videoId, src]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
@@ -258,7 +264,22 @@ export function VideoPlayer({ src, poster }: VideoPlayerProps) {
         setBuffered((end / (video.duration || 1)) * 100);
       }
     };
-    const onLoadedMetadata = () => setDuration(video.duration);
+    const onLoadedMetadata = () => {
+      setDuration(video.duration);
+      if (
+        videoId &&
+        !durationSyncedRef.current &&
+        Number.isFinite(video.duration) &&
+        video.duration > 0
+      ) {
+        durationSyncedRef.current = true;
+        void fetch(`/api/videos/${videoId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ duration: Math.round(video.duration) }),
+        }).catch(() => {});
+      }
+    };
     const onVolumeChange = () => {
       setVolume(video.volume);
       setMuted(video.muted);
@@ -277,7 +298,7 @@ export function VideoPlayer({ src, poster }: VideoPlayerProps) {
       video.removeEventListener("loadedmetadata", onLoadedMetadata);
       video.removeEventListener("volumechange", onVolumeChange);
     };
-  }, []);
+  }, [videoId]);
 
   useEffect(() => {
     const onFullscreenChange = () => {

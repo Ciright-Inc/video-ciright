@@ -33,6 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { VisibilitySelect } from "@/components/upload/VisibilitySelect";
 import { captureVideoThumbnail } from "@/lib/capture-video-thumbnail";
+import { probeVideoDuration } from "@/lib/probe-video-duration";
 import { cn } from "@/lib/utils";
 import {
   UploadProgressPanel,
@@ -80,6 +81,7 @@ export function UploadForm() {
   const [visibility, setVisibility] = useState("PUBLIC");
   const [tags, setTags] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [useExternalUrl, setUseExternalUrl] = useState(false);
   const [videoUrl, setVideoUrl] = useState(SAMPLE_VIDEO_URL);
@@ -194,6 +196,7 @@ export function UploadForm() {
     setAutoThumbnailBlob(null);
     if (!file) {
       setVideoFile(null);
+      setVideoDuration(null);
       clearThumbnailPreview();
       return;
     }
@@ -203,6 +206,7 @@ export function UploadForm() {
     }
     setError("");
     setVideoFile(file);
+    void probeVideoDuration(file).then(setVideoDuration);
     await generateThumbnailFromVideo(file);
   }
 
@@ -370,9 +374,12 @@ export function UploadForm() {
     kind: "video" | "thumbnail",
     videoId: string,
     step: Extract<UploadStep, "uploading-video" | "uploading-thumbnail">,
-    onProgress: (percent: number) => void
+    onProgress: (percent: number) => void,
+    options?: { syncStep?: boolean }
   ): Promise<{ publicUrl: string; key: string }> {
-    setUploadStep(step);
+    if (options?.syncStep !== false) {
+      setUploadStep(step);
+    }
     onProgress(0);
 
     const { uploadUrl, publicUrl, key } = await getPresignedUpload(
@@ -427,7 +434,6 @@ export function UploadForm() {
     try {
       const videoId = createId();
       let finalVideoUrl = videoUrl;
-      let originalUrl: string | undefined;
       let s3Key: string | undefined;
       let willTranscode = false;
 
@@ -439,6 +445,12 @@ export function UploadForm() {
         let thumbPercent = 0;
         const updateCombinedProgress = () => {
           setFileUploadPercent(Math.round((videoPercent + thumbPercent) / 2));
+          // Video is the long pole; avoid thumbnail's setUploadStep winning the race.
+          if (videoPercent < 100) {
+            setUploadStep("uploading-video");
+          } else if (thumbPercent < 100) {
+            setUploadStep("uploading-thumbnail");
+          }
         };
 
         setUploadStep("uploading-video");
@@ -453,7 +465,8 @@ export function UploadForm() {
             (p) => {
               videoPercent = p;
               updateCombinedProgress();
-            }
+            },
+            { syncStep: false }
           ),
           uploadToStorage(
             thumbnailFile,
@@ -463,11 +476,11 @@ export function UploadForm() {
             (p) => {
               thumbPercent = p;
               updateCombinedProgress();
-            }
+            },
+            { syncStep: false }
           ),
         ]);
 
-        originalUrl = videoResult.publicUrl;
         finalVideoUrl = videoResult.publicUrl;
         s3Key = videoResult.key;
         willTranscode = true;
@@ -484,11 +497,11 @@ export function UploadForm() {
             description,
             visibility,
             videoUrl: finalVideoUrl,
-            originalUrl,
             thumbnailUrl: thumbnailResult.publicUrl,
             s3Key,
             tags,
             useExternalUrl: false,
+            ...(videoDuration != null && { duration: videoDuration }),
           }),
         });
 
@@ -521,6 +534,8 @@ export function UploadForm() {
       setUploadStep("saving");
       setFileUploadPercent(null);
 
+      const externalDuration = await probeVideoDuration(finalVideoUrl.trim());
+
       const res = await fetch("/api/videos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -533,6 +548,7 @@ export function UploadForm() {
           thumbnailUrl: finalThumbnailUrl,
           tags,
           useExternalUrl: true,
+          ...(externalDuration != null && { duration: externalDuration }),
         }),
       });
 

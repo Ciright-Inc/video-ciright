@@ -32,23 +32,23 @@ export async function POST(request: Request) {
       title,
       description,
       videoUrl,
-      originalUrl,
       thumbnailUrl,
       visibility,
       tags,
       s3Key,
       useExternalUrl,
+      duration,
     } = body as {
       id?: string;
       title?: string;
       description?: string;
       videoUrl?: string;
-      originalUrl?: string;
       thumbnailUrl?: string;
       visibility?: Visibility;
       tags?: string[];
       s3Key?: string;
       useExternalUrl?: boolean;
+      duration?: number;
     };
 
     if (!title || !videoUrl) {
@@ -61,13 +61,18 @@ export async function POST(request: Request) {
     const needsTranscode =
       !useExternalUrl && Boolean(s3Key) && isTranscodingEnabled();
 
+    const roundedDuration =
+      typeof duration === "number" && Number.isFinite(duration) && duration > 0
+        ? Math.round(duration)
+        : undefined;
+
     const data = {
       ...(requestedId ? { id: requestedId } : {}),
       title,
       description: description ?? null,
       videoUrl,
-      originalUrl: originalUrl ?? null,
       thumbnailUrl: thumbnailUrl ?? null,
+      ...(roundedDuration != null && { duration: roundedDuration }),
       visibility: visibility ?? Visibility.PUBLIC,
       status: needsTranscode ? VideoStatus.PROCESSING : VideoStatus.READY,
       channelId: session.user.channelId,
@@ -115,7 +120,16 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(video, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Failed to create video" }, { status: 500 });
+  } catch (error) {
+    console.error("POST /api/videos failed:", error);
+    const detail =
+      error instanceof Error ? error.message : "Failed to create video";
+    return NextResponse.json(
+      {
+        error: "Failed to create video",
+        ...(process.env.NODE_ENV === "development" && { detail }),
+      },
+      { status: 500 }
+    );
   }
 }

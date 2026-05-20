@@ -12,6 +12,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
+    "db:migrate-original-url": "psql \"$DATABASE_URL\" -f prisma/migrations/20250520120000_add_video_original_url/migration.sql",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "transcoder:dev": "npm run dev --prefix services/transcoder",

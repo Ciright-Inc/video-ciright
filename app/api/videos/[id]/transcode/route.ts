@@ -38,7 +38,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
   }
 
   const s3Key =
-    tryExtractKeyFromPublicObjectUrl(video.originalUrl ?? video.videoUrl) ??
+    tryExtractKeyFromPublicObjectUrl(video.videoUrl) ??
     null;
 
   if (!s3Key) {
