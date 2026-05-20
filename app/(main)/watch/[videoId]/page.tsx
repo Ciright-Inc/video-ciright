@@ -4,7 +4,7 @@ import { getVideoById, getRelatedVideos } from "@/lib/data/videos";
 import { getCommentsByVideoId } from "@/lib/data/comments";
 import { getVideoLikeStats, getUserLikeValue } from "@/lib/data/likes";
 import { isSubscribed } from "@/lib/data/channels";
-import { VideoPlayer } from "@/components/video/VideoPlayer";
+import { WatchPlayerSection } from "@/components/video/WatchPlayerSection";
 import { VideoInfo } from "@/components/video/VideoInfo";
 import { RelatedVideoList } from "@/components/video/RelatedVideoList";
 import { CommentsSection } from "@/components/comment/CommentsSection";
@@ -42,7 +42,13 @@ export default async function WatchPage({ params }: WatchPageProps) {
       <ViewCounter videoId={videoId} />
       <div className="flex flex-col gap-4 xl:flex-row xl:gap-4">
         <div className="min-w-0 flex-1 xl:max-w-[calc(100%-424px)]">
-          <VideoPlayer src={video.videoUrl} poster={video.thumbnailUrl} />
+          <WatchPlayerSection
+            videoId={video.id}
+            initialStatus={video.status}
+            src={video.videoUrl}
+            poster={video.thumbnailUrl}
+            isOwner={isOwner}
+          />
           <VideoInfo
             videoId={video.id}
             title={video.title}

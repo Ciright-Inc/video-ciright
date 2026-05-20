@@ -2,7 +2,9 @@ import { Readable } from "node:stream";
 import { ReadableStream } from "node:stream/web";
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -45,9 +47,44 @@ export function getS3Bucket(): string {
   return process.env.AWS_S3_BUCKET ?? "video-ciright";
 }
 
+/** @deprecated Use buildVideoOriginalKey / buildVideoThumbnailKey */
 export function buildObjectKey(channelId: string, fileName: string): string {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
   return `videos/${channelId}/${Date.now()}-${safeName}`;
+}
+
+function extensionFromFileName(fileName: string): string {
+  const ext = fileName.includes(".")
+    ? fileName.split(".").pop()?.toLowerCase()
+    : "";
+  if (ext && /^[a-z0-9]+$/.test(ext)) return ext;
+  return "mp4";
+}
+
+export function buildVideoOriginalKey(
+  channelId: string,
+  videoId: string,
+  fileName: string
+): string {
+  const ext = extensionFromFileName(fileName);
+  return `videos/${channelId}/${videoId}/original.${ext}`;
+}
+
+export function buildVideoThumbnailKey(
+  channelId: string,
+  videoId: string,
+  fileName: string
+): string {
+  const ext = extensionFromFileName(fileName);
+  return `videos/${channelId}/${videoId}/thumbnail.${ext}`;
+}
+
+export function buildHlsPrefix(channelId: string, videoId: string): string {
+  return `videos/${channelId}/${videoId}/hls/`;
+}
+
+export function buildHlsMasterKey(channelId: string, videoId: string): string {
+  return `${buildHlsPrefix(channelId, videoId)}master.m3u8`;
 }
 
 export function buildChannelAssetKey(
@@ -203,4 +240,44 @@ export async function deleteObject(key: string): Promise<void> {
       Key: key,
     })
   );
+}
+
+/** Delete all objects under a prefix (e.g. videos/{channelId}/{videoId}/). */
+export async function deleteObjectsByPrefix(prefix: string): Promise<void> {
+  const bucket = getS3Bucket();
+  let continuationToken: string | undefined;
+
+  do {
+    const list = await getS3Client().send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    const keys = (list.Contents ?? [])
+      .map((obj) => obj.Key)
+      .filter((key): key is string => Boolean(key));
+
+    if (keys.length > 0) {
+      await getS3Client().send(
+        new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: { Objects: keys.map((Key) => ({ Key })) },
+        })
+      );
+    }
+
+    continuationToken = list.IsTruncated
+      ? list.NextContinuationToken
+      : undefined;
+  } while (continuationToken);
+}
+
+export function buildVideoAssetPrefix(
+  channelId: string,
+  videoId: string
+): string {
+  return `videos/${channelId}/${videoId}/`;
 }

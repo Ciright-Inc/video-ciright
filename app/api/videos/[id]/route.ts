@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVideoById, incrementVideoViews } from "@/lib/data/videos";
-import { deleteObject, tryExtractKeyFromPublicObjectUrl } from "@/lib/s3";
+import {
+  buildVideoAssetPrefix,
+  deleteObject,
+  deleteObjectsByPrefix,
+  tryExtractKeyFromPublicObjectUrl,
+} from "@/lib/s3";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -67,11 +72,21 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const s3Key = tryExtractKeyFromPublicObjectUrl(existing.videoUrl);
-  if (s3Key) {
-    try {
-      await deleteObject(s3Key);
-    } catch (e) {
+  try {
+    await deleteObjectsByPrefix(
+      buildVideoAssetPrefix(existing.channelId, existing.id)
+    );
+  } catch (e) {
+    const legacyKey =
+      tryExtractKeyFromPublicObjectUrl(existing.originalUrl ?? "") ??
+      tryExtractKeyFromPublicObjectUrl(existing.videoUrl);
+    if (legacyKey) {
+      try {
+        await deleteObject(legacyKey);
+      } catch (inner) {
+        console.error("S3 delete failed (video still removed from DB):", inner);
+      }
+    } else {
       console.error("S3 delete failed (video still removed from DB):", e);
     }
   }

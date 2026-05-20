@@ -82,6 +82,7 @@ model Video {
   description  String?
   thumbnailUrl String?
   videoUrl     String
+  originalUrl  String?
   duration     Int?
   views        Int         @default(0)
   status       VideoStatus @default(PROCESSING)

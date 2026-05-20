@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
-  buildObjectKey,
+  buildVideoOriginalKey,
+  buildVideoThumbnailKey,
   getPublicObjectUrl,
   isAllowedImageContentType,
   isAllowedVideoContentType,
@@ -71,7 +72,25 @@ export async function POST(request: Request) {
       }
     }
 
-    const key = buildObjectKey(session.user.channelId, file.name);
+    if (typeof videoId !== "string" || !videoId.trim()) {
+      return NextResponse.json(
+        { error: "videoId is required" },
+        { status: 400 }
+      );
+    }
+
+    const key =
+      kind === "video"
+        ? buildVideoOriginalKey(
+            session.user.channelId,
+            videoId.trim(),
+            file.name
+          )
+        : buildVideoThumbnailKey(
+            session.user.channelId,
+            videoId.trim(),
+            file.name
+          );
 
     await uploadObjectFromFile({
       key,

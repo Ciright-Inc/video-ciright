@@ -15,7 +15,8 @@ export type UploadStep =
   | "preparing"
   | "uploading-video"
   | "uploading-thumbnail"
-  | "saving";
+  | "saving"
+  | "transcoding";
 
 type StepConfig = {
   id: UploadStep;
@@ -44,13 +45,22 @@ const ALL_STEPS: StepConfig[] = [
     label: "Publish",
     description: "Saving your video to the library",
   },
+  {
+    id: "transcoding",
+    label: "Process",
+    description: "Converting to adaptive streaming (HLS)",
+  },
 ];
 
-function stepsForUpload(skipsVideo: boolean): StepConfig[] {
+function stepsForUpload(skipsVideo: boolean, includesTranscode: boolean): StepConfig[] {
+  let steps = ALL_STEPS;
   if (skipsVideo) {
-    return ALL_STEPS.filter((s) => s.id !== "uploading-video");
+    steps = steps.filter((s) => s.id !== "uploading-video");
   }
-  return ALL_STEPS;
+  if (!includesTranscode) {
+    steps = steps.filter((s) => s.id !== "transcoding");
+  }
+  return steps;
 }
 
 function stepIndex(steps: StepConfig[], step: UploadStep): number {
@@ -86,6 +96,7 @@ function overallPercent(
 type UploadProgressPanelProps = {
   step: UploadStep;
   skipsVideoUpload: boolean;
+  includesTranscode?: boolean;
   filePercent: number | null;
   videoFileName?: string | null;
 };
@@ -93,10 +104,11 @@ type UploadProgressPanelProps = {
 export function UploadProgressPanel({
   step,
   skipsVideoUpload,
+  includesTranscode = false,
   filePercent,
   videoFileName,
 }: UploadProgressPanelProps) {
-  const steps = stepsForUpload(skipsVideoUpload);
+  const steps = stepsForUpload(skipsVideoUpload, includesTranscode);
   const current = steps.find((s) => s.id === step);
   const activeIndex = stepIndex(steps, step);
   const percent = Math.min(
@@ -131,7 +143,9 @@ export function UploadProgressPanel({
                   ? "Preparing upload"
                   : current?.label === "Publish"
                     ? "Publishing"
-                    : `Uploading ${current?.label.toLowerCase()}`}
+                    : current?.label === "Process"
+                      ? "Processing video"
+                      : `Uploading ${current?.label.toLowerCase()}`}
               </CardTitle>
               <CardDescription
                 id="upload-progress-desc"

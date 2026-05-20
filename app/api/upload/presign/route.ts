@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
   buildChannelAssetKey,
-  buildObjectKey,
+  buildVideoOriginalKey,
+  buildVideoThumbnailKey,
   createPresignedUploadUrl,
   getPublicObjectUrl,
   isAllowedImageContentType,
@@ -28,12 +29,14 @@ export async function POST(request: Request) {
       fileSize,
       kind = "video",
       assetType,
+      videoId,
     } = body as {
       fileName?: string;
       contentType?: string;
       fileSize?: number;
       kind?: "video" | "thumbnail" | "channel-asset";
       assetType?: "avatar" | "banner";
+      videoId?: string;
     };
 
     if (!fileName || !contentType) {
@@ -63,7 +66,17 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      const key = buildObjectKey(session.user.channelId, fileName);
+      if (!videoId) {
+        return NextResponse.json(
+          { error: "videoId is required for video uploads" },
+          { status: 400 }
+        );
+      }
+      const key = buildVideoOriginalKey(
+        session.user.channelId,
+        videoId,
+        fileName
+      );
       const uploadUrl = await createPresignedUploadUrl({ key, contentType });
       const publicUrl = getPublicObjectUrl(key);
       return NextResponse.json({ uploadUrl, key, publicUrl });
@@ -82,7 +95,17 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      const key = buildObjectKey(session.user.channelId, fileName);
+      if (!videoId) {
+        return NextResponse.json(
+          { error: "videoId is required for thumbnail uploads" },
+          { status: 400 }
+        );
+      }
+      const key = buildVideoThumbnailKey(
+        session.user.channelId,
+        videoId,
+        fileName
+      );
       const uploadUrl = await createPresignedUploadUrl({ key, contentType });
       const publicUrl = getPublicObjectUrl(key);
       return NextResponse.json({ uploadUrl, key, publicUrl });

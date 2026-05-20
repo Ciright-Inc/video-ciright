@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createId } from "@paralleldrive/cuid2";
 import {
   CirclePlayIcon,
   ImagePlusIcon,
@@ -73,6 +74,7 @@ export function UploadForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const videoSectionRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState("PUBLIC");
@@ -199,6 +201,7 @@ export function UploadForm() {
       toast.error("Video must be 1 GB or smaller");
       return;
     }
+    setError("");
     setVideoFile(file);
     await generateThumbnailFromVideo(file);
   }
@@ -271,101 +274,249 @@ export function UploadForm() {
     throw new Error("Add a video or upload a thumbnail image");
   }
 
-  function uploadFileViaApi(
+  async function getPresignedUpload(
     file: File,
     kind: "video" | "thumbnail",
+    videoId: string
+  ): Promise<{ uploadUrl: string; publicUrl: string; key: string }> {
+    const res = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+        kind,
+        videoId,
+      }),
+    });
+
+    const data = (await res.json()) as {
+      uploadUrl?: string;
+      publicUrl?: string;
+      key?: string;
+      error?: string;
+    };
+
+    if (!res.ok || !data.uploadUrl || !data.publicUrl || !data.key) {
+      throw new Error(data.error ?? "Failed to prepare upload");
+    }
+
+    return {
+      uploadUrl: data.uploadUrl,
+      publicUrl: data.publicUrl,
+      key: data.key,
+    };
+  }
+
+  function uploadToPresignedUrl(
+    file: File,
+    uploadUrl: string,
     onProgress: (percent: number) => void
-  ): Promise<string> {
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("kind", kind);
+      xhr.open("PUT", uploadUrl);
+      xhr.setRequestHeader("Content-Type", file.type);
 
-      xhr.open("POST", "/api/upload/file");
       xhr.upload.addEventListener("progress", (event) => {
         if (!event.lengthComputable) return;
         onProgress(Math.round((event.loaded / event.total) * 100));
       });
 
       xhr.addEventListener("load", () => {
-        let data: { publicUrl?: string; error?: string } = {};
-        try {
-          data = JSON.parse(xhr.responseText) as {
-            publicUrl?: string;
-            error?: string;
-          };
-        } catch {
-          /* non-JSON body */
-        }
-
-        if (xhr.status >= 200 && xhr.status < 300 && data.publicUrl) {
-          resolve(data.publicUrl);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
           return;
         }
 
-        reject(
-          new Error(
-            data.error ??
-              (xhr.status === 413
-                ? "File is too large for upload"
-                : `Upload failed (${xhr.status || "network error"})`)
-          )
-        );
+        reject(new Error(`Upload failed (${xhr.status || "network error"})`));
       });
 
       xhr.addEventListener("error", () =>
-        reject(new Error("Network error while uploading. Try again."))
+        reject(
+          new Error(
+            "Network error while uploading. Check your connection and try again."
+          )
+        )
       );
       xhr.addEventListener("abort", () =>
         reject(new Error("Upload was cancelled"))
       );
 
-      xhr.send(formData);
+      xhr.send(file);
     });
+  }
+
+  async function uploadToPresignedUrlWithRetry(
+    file: File,
+    uploadUrl: string,
+    onProgress: (percent: number) => void
+  ): Promise<void> {
+    try {
+      await uploadToPresignedUrl(file, uploadUrl, onProgress);
+    } catch (firstError) {
+      onProgress(0);
+      try {
+        await uploadToPresignedUrl(file, uploadUrl, onProgress);
+      } catch {
+        throw firstError;
+      }
+    }
   }
 
   async function uploadToStorage(
     file: File,
-    step: Extract<UploadStep, "uploading-video" | "uploading-thumbnail">
-  ): Promise<string> {
-    const kind = file.type.startsWith("image/") ? "thumbnail" : "video";
-
+    kind: "video" | "thumbnail",
+    videoId: string,
+    step: Extract<UploadStep, "uploading-video" | "uploading-thumbnail">,
+    onProgress: (percent: number) => void
+  ): Promise<{ publicUrl: string; key: string }> {
     setUploadStep(step);
-    setFileUploadPercent(0);
+    onProgress(0);
 
-    const publicUrl = await uploadFileViaApi(file, kind, setFileUploadPercent);
+    const { uploadUrl, publicUrl, key } = await getPresignedUpload(
+      file,
+      kind,
+      videoId
+    );
+    await uploadToPresignedUrlWithRetry(file, uploadUrl, onProgress);
+    onProgress(100);
+    return { publicUrl, key };
+  }
 
-    setFileUploadPercent(100);
-    return publicUrl;
+  function reportUploadError(
+    message: string,
+    scrollTarget?: HTMLElement | null
+  ) {
+    setError(message);
+    toast.error(message);
+    scrollTarget?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function validateBeforePublish(): string | null {
+    if (!title.trim()) {
+      return "Add a title before publishing";
+    }
+    if (!useExternalUrl && !videoFile) {
+      return "Select a video file to upload";
+    }
+    if (useExternalUrl && !videoUrl.trim()) {
+      return "Video URL is required";
+    }
+    return null;
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
+
+    const validationError = validateBeforePublish();
+    if (validationError) {
+      reportUploadError(
+        validationError,
+        !useExternalUrl && !videoFile ? videoSectionRef.current : null
+      );
+      return;
+    }
+
+    setLoading(true);
     setUploadStep("preparing");
     setFileUploadPercent(null);
 
     try {
+      const videoId = createId();
       let finalVideoUrl = videoUrl;
+      let originalUrl: string | undefined;
+      let s3Key: string | undefined;
+      let willTranscode = false;
 
       if (!useExternalUrl) {
-        if (!videoFile) {
-          throw new Error("Select a video file to upload");
+        setUploadStep("preparing");
+        const thumbnailFile = await resolveThumbnailForUpload();
+
+        let videoPercent = 0;
+        let thumbPercent = 0;
+        const updateCombinedProgress = () => {
+          setFileUploadPercent(Math.round((videoPercent + thumbPercent) / 2));
+        };
+
+        setUploadStep("uploading-video");
+        setFileUploadPercent(0);
+
+        const [videoResult, thumbnailResult] = await Promise.all([
+          uploadToStorage(
+            videoFile!,
+            "video",
+            videoId,
+            "uploading-video",
+            (p) => {
+              videoPercent = p;
+              updateCombinedProgress();
+            }
+          ),
+          uploadToStorage(
+            thumbnailFile,
+            "thumbnail",
+            videoId,
+            "uploading-thumbnail",
+            (p) => {
+              thumbPercent = p;
+              updateCombinedProgress();
+            }
+          ),
+        ]);
+
+        originalUrl = videoResult.publicUrl;
+        finalVideoUrl = videoResult.publicUrl;
+        s3Key = videoResult.key;
+        willTranscode = true;
+
+        setUploadStep("saving");
+        setFileUploadPercent(null);
+
+        const res = await fetch("/api/videos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: videoId,
+            title,
+            description,
+            visibility,
+            videoUrl: finalVideoUrl,
+            originalUrl,
+            thumbnailUrl: thumbnailResult.publicUrl,
+            s3Key,
+            tags,
+            useExternalUrl: false,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Upload failed");
+
+        if (willTranscode && data.status === "PROCESSING") {
+          setUploadStep("transcoding");
         }
-        finalVideoUrl = await uploadToStorage(videoFile, "uploading-video");
-      } else if (!finalVideoUrl.trim()) {
-        throw new Error("Video URL is required");
+
+        localStorage.removeItem(DRAFT_KEY);
+        router.push(`/watch/${data.id}`);
+        router.refresh();
+        return;
       }
 
       setUploadStep("preparing");
       setFileUploadPercent(null);
       const thumbnailFile = await resolveThumbnailForUpload();
-      const finalThumbnailUrl = await uploadToStorage(
-        thumbnailFile,
-        "uploading-thumbnail"
-      );
+      const finalThumbnailUrl = (
+        await uploadToStorage(
+          thumbnailFile,
+          "thumbnail",
+          videoId,
+          "uploading-thumbnail",
+          setFileUploadPercent
+        )
+      ).publicUrl;
 
       setUploadStep("saving");
       setFileUploadPercent(null);
@@ -374,12 +525,14 @@ export function UploadForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: videoId,
           title,
           description,
           visibility,
           videoUrl: finalVideoUrl,
           thumbnailUrl: finalThumbnailUrl,
           tags,
+          useExternalUrl: true,
         }),
       });
 
@@ -390,7 +543,9 @@ export function UploadForm() {
       router.push(`/watch/${data.id}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      reportUploadError(
+        err instanceof Error ? err.message : "Upload failed"
+      );
     } finally {
       setLoading(false);
       setUploadStep(null);
@@ -445,6 +600,7 @@ export function UploadForm() {
         <UploadProgressPanel
           step={uploadStep}
           skipsVideoUpload={useExternalUrl}
+          includesTranscode={!useExternalUrl}
           filePercent={fileUploadPercent}
           videoFileName={videoFile?.name}
         />
@@ -587,8 +743,16 @@ export function UploadForm() {
           </Alert>
         </div>
 
-        <div className="flex flex-col gap-6 lg:col-span-5">
-          <Card className="gap-0 overflow-hidden border-border bg-card p-0 py-0 shadow-sm">
+        <div ref={videoSectionRef} className="flex flex-col gap-6 lg:col-span-5">
+          <Card
+            className={cn(
+              "gap-0 overflow-hidden border-border bg-card p-0 py-0 shadow-sm",
+              error === "Select a video file to upload" &&
+                !useExternalUrl &&
+                !videoFile &&
+                "ring-2 ring-destructive"
+            )}
+          >
             <div
               className={cn(
                 "group/preview relative aspect-video w-full overflow-hidden rounded-t-xl bg-surface-dark",

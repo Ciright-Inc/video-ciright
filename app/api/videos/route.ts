@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPublicVideos } from "@/lib/data/videos";
-import { VideoStatus, Visibility } from "@prisma/client";
+import {
+  buildTranscodeCallbackUrl,
+  isTranscodingEnabled,
+  triggerTranscode,
+} from "@/lib/transcode";
+import { type Prisma, VideoStatus, Visibility } from "@prisma/client";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -22,7 +27,29 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, videoUrl, thumbnailUrl, visibility, tags } = body;
+    const {
+      id: requestedId,
+      title,
+      description,
+      videoUrl,
+      originalUrl,
+      thumbnailUrl,
+      visibility,
+      tags,
+      s3Key,
+      useExternalUrl,
+    } = body as {
+      id?: string;
+      title?: string;
+      description?: string;
+      videoUrl?: string;
+      originalUrl?: string;
+      thumbnailUrl?: string;
+      visibility?: Visibility;
+      tags?: string[];
+      s3Key?: string;
+      useExternalUrl?: boolean;
+    };
 
     if (!title || !videoUrl) {
       return NextResponse.json(
@@ -31,31 +58,61 @@ export async function POST(request: Request) {
       );
     }
 
-    const video = await prisma.video.create({
-      data: {
-        title,
-        description: description ?? null,
-        videoUrl,
-        thumbnailUrl: thumbnailUrl ?? null,
-        visibility: visibility ?? Visibility.PUBLIC,
-        status: VideoStatus.READY,
-        channelId: session.user.channelId,
-        tags: tags?.length
-          ? {
-              create: await Promise.all(
-                (tags as string[]).map(async (name: string) => {
-                  const tag = await prisma.tag.upsert({
-                    where: { name: name.toLowerCase() },
-                    create: { name: name.toLowerCase() },
-                    update: {},
-                  });
-                  return { tagId: tag.id };
-                })
-              ),
-            }
-          : undefined,
-      },
-    });
+    const needsTranscode =
+      !useExternalUrl && Boolean(s3Key) && isTranscodingEnabled();
+
+    const data: Prisma.VideoUncheckedCreateInput = {
+      ...(requestedId ? { id: requestedId } : {}),
+      title,
+      description: description ?? null,
+      videoUrl,
+      originalUrl: originalUrl ?? null,
+      thumbnailUrl: thumbnailUrl ?? null,
+      visibility: visibility ?? Visibility.PUBLIC,
+      status: needsTranscode ? VideoStatus.PROCESSING : VideoStatus.READY,
+      channelId: session.user.channelId,
+      tags: tags?.length
+        ? {
+            create: await Promise.all(
+              tags.map(async (name: string) => {
+                const tag = await prisma.tag.upsert({
+                  where: { name: name.toLowerCase() },
+                  create: { name: name.toLowerCase() },
+                  update: {},
+                });
+                return { tagId: tag.id };
+              })
+            ),
+          }
+        : undefined,
+    };
+
+    const video = await prisma.video.create({ data });
+
+    if (needsTranscode && s3Key) {
+      const transcodeResult = await triggerTranscode({
+        videoId: video.id,
+        channelId: video.channelId,
+        s3Key,
+        callbackUrl: buildTranscodeCallbackUrl(video.id),
+      });
+
+      if (!transcodeResult.ok) {
+        await prisma.video.update({
+          where: { id: video.id },
+          data: { status: VideoStatus.FAILED },
+        });
+        return NextResponse.json(
+          {
+            error:
+              transcodeResult.error ??
+              "Video saved but transcoding could not start",
+            id: video.id,
+          },
+          { status: 502 }
+        );
+      }
+    }
 
     return NextResponse.json(video, { status: 201 });
   } catch {
