@@ -7,7 +7,7 @@ import {
   isTranscodingEnabled,
   triggerTranscode,
 } from "@/lib/transcode";
-import { type Prisma, VideoStatus, Visibility } from "@prisma/client";
+import { VideoStatus, Visibility } from "@prisma/client";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const needsTranscode =
       !useExternalUrl && Boolean(s3Key) && isTranscodingEnabled();
 
-    const data: Prisma.VideoUncheckedCreateInput = {
+    const data = {
       ...(requestedId ? { id: requestedId } : {}),
       title,
       description: description ?? null,
