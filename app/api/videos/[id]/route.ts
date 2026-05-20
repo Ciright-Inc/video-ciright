@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVideoById, incrementVideoViews } from "@/lib/data/videos";
+import { deleteObject, tryExtractKeyFromPublicObjectUrl } from "@/lib/s3";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -64,6 +65,15 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   const existing = await prisma.video.findUnique({ where: { id } });
   if (!existing || existing.channelId !== session.user.channelId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const s3Key = tryExtractKeyFromPublicObjectUrl(existing.videoUrl);
+  if (s3Key) {
+    try {
+      await deleteObject(s3Key);
+    } catch (e) {
+      console.error("S3 delete failed (video still removed from DB):", e);
+    }
   }
 
   await prisma.video.delete({ where: { id } });

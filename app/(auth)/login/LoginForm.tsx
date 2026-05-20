@@ -73,7 +73,7 @@ export default function LoginForm() {
           <div className="w-full border-t border-hairline" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-surface-card px-2 text-muted">Or</span>
+          <span className="bg-surface-card px-2 text-muted-foreground">Or</span>
         </div>
       </div>
 

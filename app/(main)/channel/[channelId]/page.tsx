@@ -32,7 +32,7 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
           <ChannelAvatar src={channel.avatarUrl} name={channel.name} />
           <div className="pb-2">
             <h1 className="text-2xl font-bold text-ink">{channel.name}</h1>
-            <p className="text-sm text-muted">@{channel.handle}</p>
+            <p className="text-sm text-muted-foreground">@{channel.handle}</p>
             <p className="text-sm text-body">
               {channel._count.subscribers.toLocaleString()} subscribers ·{" "}
               {channel._count.videos} videos

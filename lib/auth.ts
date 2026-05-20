@@ -5,13 +5,11 @@ import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { slugifyHandle } from "@/lib/format";
+import { authConfig } from "@/auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
   providers: [
     ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
       ? [
@@ -70,8 +68,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           include: { channel: true },
         });
         if (dbUser) {
-          token.channelId = dbUser.channel?.id ?? null;
-          token.channelHandle = dbUser.channel?.handle ?? null;
+          if (!dbUser.channel) {
+            const base = slugifyHandle(
+              dbUser.name ?? dbUser.email.split("@")[0]
+            );
+            let handle = base;
+            let i = 0;
+            while (await prisma.channel.findUnique({ where: { handle } })) {
+              i++;
+              handle = `${base}${i}`;
+            }
+            const channel = await prisma.channel.create({
+              data: {
+                handle,
+                name: dbUser.name ?? base,
+                avatarUrl: dbUser.image,
+                ownerId: dbUser.id,
+              },
+            });
+            token.channelId = channel.id;
+            token.channelHandle = channel.handle;
+          } else {
+            token.channelId = dbUser.channel.id;
+            token.channelHandle = dbUser.channel.handle;
+          }
         }
       }
 
@@ -83,6 +103,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.channelId = (token.channelId as string | null) ?? null;
         session.user.channelHandle =
           (token.channelHandle as string | null) ?? null;
+      }
+      if (typeof token.exp === "number") {
+        session.expiresAt = token.exp * 1000;
       }
       return session;
     },

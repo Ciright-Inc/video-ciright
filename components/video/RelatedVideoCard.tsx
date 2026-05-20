@@ -6,9 +6,11 @@ import type { VideoListItem } from "@/lib/data/videos";
 
 interface RelatedVideoCardProps {
   video: VideoListItem;
+  /** When set, used for the time line instead of the video's publish date */
+  contextDate?: string | Date;
 }
 
-export function RelatedVideoCard({ video }: RelatedVideoCardProps) {
+export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) {
   return (
     <article className="group flex gap-2">
       <Link
@@ -46,15 +48,17 @@ export function RelatedVideoCard({ video }: RelatedVideoCardProps) {
         >
           {video.channel.name}
         </Link>
-        <p className="mt-0.5 truncate text-xs text-muted">
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {formatViews(video.views)} ·{" "}
-          {formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}
+          {formatDistanceToNow(new Date(contextDate ?? video.createdAt), {
+            addSuffix: true,
+          })}
         </p>
 
         <button
           type="button"
           aria-label="More actions"
-          className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-full text-muted opacity-0 transition-opacity hover:bg-surface-soft hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-surface-soft hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <MoreIcon />
         </button>

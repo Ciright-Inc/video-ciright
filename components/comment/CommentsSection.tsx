@@ -49,7 +49,7 @@ export function CommentsSection({ videoId, comments }: CommentsSectionProps) {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortOption)}
-            className="cursor-pointer appearance-none bg-transparent pr-6 text-sm font-medium text-ink outline-none focus-visible:underline"
+            className="cursor-pointer appearance-none rounded-md bg-transparent pr-6 text-sm font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23717171'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
               backgroundRepeat: "no-repeat",

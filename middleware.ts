@@ -1,11 +1,14 @@
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
+import { authConfig } from "@/auth.config";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
 
-  const protectedPaths = ["/upload", "/studio"];
+  const protectedPaths = ["/upload", "/studio", "/profile"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   if (isProtected && !isLoggedIn) {
@@ -18,5 +21,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/upload/:path*", "/studio/:path*"],
+  matcher: ["/upload/:path*", "/studio/:path*", "/profile/:path*"],
 };

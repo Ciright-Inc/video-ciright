@@ -14,12 +14,13 @@ export function SubscribeButton({
   channelId,
   initialSubscribed,
 }: SubscribeButtonProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [subscribed, setSubscribed] = useState(initialSubscribed);
   const [loading, setLoading] = useState(false);
 
   async function toggle() {
+    if (status === "loading") return;
     if (!session) {
       router.push("/login");
       return;
@@ -51,7 +52,7 @@ export function SubscribeButton({
       size="sm"
       className="rounded-[var(--radius-pill)]"
       onClick={toggle}
-      disabled={loading}
+      disabled={loading || status === "loading"}
     >
       {subscribed ? "Subscribed" : "Subscribe"}
     </Button>

@@ -3,6 +3,8 @@ import "next-auth/jwt";
 
 declare module "next-auth" {
   interface Session {
+    /** Unix ms when the JWT expires (for client-side session expiry UI). */
+    expiresAt?: number;
     user: {
       id: string;
       email: string;

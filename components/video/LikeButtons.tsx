@@ -21,14 +21,15 @@ export function LikeButtons({
   initialDislikeCount,
   initialUserValue,
 }: LikeButtonsProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const [likeCount, setLikeCount] = useState(initialLikeCount);
-  const [dislikeCount, setDislikeCount] = useState(initialDislikeCount);
+  const [likeCount, setLikeCount] = useState(initialLikeCount ?? 0);
+  const [dislikeCount, setDislikeCount] = useState(initialDislikeCount ?? 0);
   const [userValue, setUserValue] = useState(initialUserValue);
   const [loading, setLoading] = useState(false);
 
   async function handleLike(value: 1 | -1) {
+    if (status === "loading") return;
     if (!session) {
       router.push("/login");
       return;
@@ -70,35 +71,47 @@ export function LikeButtons({
     }
   }
 
+  const pillButtonClass =
+    "h-auto cursor-pointer gap-1.5 rounded-none px-3 py-2 text-sm font-medium [&_svg]:size-5";
+
   return (
-    <div className="flex items-center gap-1 rounded-[var(--radius-pill)] bg-muted p-0">
+    <div
+      className={cn(
+        "flex items-stretch rounded-[var(--radius-pill)] bg-muted transition-opacity",
+        loading && "opacity-70"
+      )}
+    >
       <Button
         type="button"
         variant="ghost"
-        size="sm"
-        disabled={loading}
+        disabled={loading || status === "loading"}
         onClick={() => handleLike(1)}
         className={cn(
-          "rounded-l-[var(--radius-pill)] rounded-r-none px-4",
+          pillButtonClass,
+          "rounded-l-[var(--radius-pill)]",
           userValue === 1 && "text-primary"
         )}
       >
-        <ThumbsUp className="size-5" />
-        {likeCount > 0 ? likeCount : null}
+        <ThumbsUp />
+        <span className="tabular-nums">{likeCount}</span>
       </Button>
-      <Separator orientation="vertical" className="h-6" />
+      <Separator
+        orientation="vertical"
+        className="my-2 !w-0.5 self-stretch rounded-full bg-hairline-strong"
+      />
       <Button
         type="button"
         variant="ghost"
-        size="sm"
-        disabled={loading}
+        disabled={loading || status === "loading"}
         onClick={() => handleLike(-1)}
         className={cn(
-          "rounded-l-none rounded-r-[var(--radius-pill)] px-4",
+          pillButtonClass,
+          "rounded-r-[var(--radius-pill)]",
           userValue === -1 && "text-primary"
         )}
       >
-        <ThumbsDown className="size-5" />
+        <ThumbsDown />
+        <span className="tabular-nums">{dislikeCount}</span>
       </Button>
     </div>
   );

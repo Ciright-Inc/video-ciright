@@ -22,13 +22,13 @@ export const cirightTheme: Theme = {
     gradientSkyLight: "#d0e0ff",
     gradientSkyMid: "#a0bce8",
 
-    hairline: "#e8eef8",
+    hairline: "#c8d4e8",
     hairlineSoft: "#f0f4fb",
     hairlineStrong: "#c8d4ec",
 
     ink: "#0a1628",
     body: "#4a5568",
-    muted: "#7a8599",
+    muted: "#4a5568",
     mutedSoft: "#b8c4d8",
     onDark: "#ffffff",
     onDarkSoft: "#a8b8d0",

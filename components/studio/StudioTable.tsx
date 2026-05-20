@@ -135,7 +135,7 @@ export function StudioTable({ videos: initialVideos }: StudioTableProps) {
                   </Badge>
                 </td>
                 <td className="p-3 text-body">{formatViews(video.views)}</td>
-                <td className="p-3 text-muted">
+                <td className="p-3 text-muted-foreground">
                   {formatDistanceToNow(new Date(video.createdAt), {
                     addSuffix: true,
                   })}

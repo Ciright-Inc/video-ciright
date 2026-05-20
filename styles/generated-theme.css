@@ -15,12 +15,13 @@
   --color-surface-dark-elevated:#002070;
   --color-gradient-sky-light:   #d0e0ff;
   --color-gradient-sky-mid:     #a0bce8;
-  --color-hairline:             #e8eef8;
+  --color-hairline:             #c8d4e8;
   --color-hairline-soft:        #f0f4fb;
   --color-hairline-strong:      #c8d4ec;
   --color-ink:                  #0a1628;
   --color-body:                 #4a5568;
-  --color-muted:                #7a8599;
+  --color-muted:                #4a5568;
+  --color-muted-text:           #4a5568;
   --color-muted-bg:             #e8eef8;
   --color-muted-soft:           #b8c4d8;
   --color-on-dark:              #ffffff;

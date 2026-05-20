@@ -60,7 +60,7 @@ export function VideoCard({ video }: VideoCardProps) {
           >
             {video.channel.name}
           </Link>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-muted-foreground">
             {formatViews(video.views)} ·{" "}
             {formatDistanceToNow(new Date(video.createdAt), {
               addSuffix: true,

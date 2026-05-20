@@ -61,7 +61,7 @@ export function VideoInfo({
             >
               {channel.name}
             </Link>
-            <p className="text-xs text-muted">
+            <p className="text-xs text-muted-foreground">
               {channel._count.subscribers.toLocaleString()} subscribers
             </p>
           </div>

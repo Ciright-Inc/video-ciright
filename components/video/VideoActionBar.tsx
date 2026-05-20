@@ -41,17 +41,26 @@ function ActionPill({
   icon: ReactNode;
   iconOnly?: boolean;
 }) {
+  const compact = iconOnly;
+
   return (
     <button
       type="button"
-      aria-label={iconOnly ? label : undefined}
+      aria-label={compact ? label : undefined}
       className={cn(
-        "flex items-center gap-2 rounded-[var(--radius-pill)] bg-surface-soft px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface-strong",
-        iconOnly && "px-2"
+        "flex shrink-0 cursor-pointer items-center justify-center bg-surface-soft text-sm font-medium text-ink transition-colors hover:bg-surface-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        compact
+          ? "size-10 rounded-full"
+          : "gap-2 rounded-[var(--radius-pill)] px-3 py-2 max-sm:size-10 max-sm:rounded-full max-sm:p-0"
       )}
     >
       {icon}
-      {!iconOnly && <span className="hidden sm:inline">{label}</span>}
+      {!iconOnly && (
+        <>
+          <span className="sr-only sm:hidden">{label}</span>
+          <span className="hidden sm:inline">{label}</span>
+        </>
+      )}
     </button>
   );
 }

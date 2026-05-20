@@ -14,7 +14,7 @@ interface CommentInputProps {
 }
 
 export function CommentInput({ videoId, parentId, onPosted }: CommentInputProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,13 +50,22 @@ export function CommentInput({ videoId, parentId, onPosted }: CommentInputProps)
     }
   }
 
+  if (status === "loading") {
+    return (
+      <div className="flex gap-4">
+        <div className="mt-1 size-9 shrink-0 animate-pulse rounded-full bg-muted" />
+        <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+      </div>
+    );
+  }
+
   if (!session) {
     return (
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         <button
           type="button"
           onClick={() => router.push("/login")}
-          className="text-text-link hover:underline"
+          className="text-text-link hover:text-text-link/80"
         >
           Sign in
         </button>{" "}
@@ -81,7 +90,7 @@ export function CommentInput({ videoId, parentId, onPosted }: CommentInputProps)
           onFocus={() => setFocused(true)}
           placeholder="Add a comment..."
           className={cn(
-            "w-full border-0 border-b border-hairline bg-transparent py-2 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-ink"
+            "w-full border-0 border-b border-hairline bg-transparent py-2 text-sm text-ink outline-none transition-colors placeholder:text-muted-foreground focus:border-ink"
           )}
         />
         {error && <p className="mt-1 text-xs text-error">{error}</p>}

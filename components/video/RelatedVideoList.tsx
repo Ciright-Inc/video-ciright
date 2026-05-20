@@ -8,7 +8,7 @@ interface RelatedVideoListProps {
 export function RelatedVideoList({ videos }: RelatedVideoListProps) {
   if (videos.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted">No related videos yet.</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">No related videos yet.</p>
     );
   }
 

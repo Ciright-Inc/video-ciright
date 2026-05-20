@@ -26,7 +26,7 @@
   --color-ink: var(--color-ink);
   --color-body: var(--color-body);
   --color-muted: var(--color-muted-bg);
-  --color-muted-foreground: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-text);
   --color-muted-soft: var(--color-muted-soft);
   --color-on-dark: var(--color-on-dark);
   --color-on-dark-soft: var(--color-on-dark-soft);
@@ -83,6 +83,11 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Alias for secondary text — `text-muted` in Tailwind maps to --color-muted (bg); use this instead */
+@utility text-muted {
+  color: var(--color-muted-foreground);
+}
+
 *,
 *::before,
 *::after {
@@ -105,10 +110,6 @@ body {
 a {
   color: var(--color-text-link);
   text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
 }
 
 /* Video player volume — white thumb & fill on dark controls */
@@ -172,7 +173,7 @@ a:hover {
   --secondary: var(--color-surface-strong);
   --secondary-foreground: var(--color-ink);
   --muted: var(--color-muted-bg);
-  --muted-foreground: var(--color-muted);
+  --muted-foreground: var(--color-muted-text);
   --accent: var(--color-surface-soft);
   --accent-foreground: var(--color-ink);
   --destructive: var(--color-error);

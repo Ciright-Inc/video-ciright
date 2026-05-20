@@ -7,7 +7,6 @@ import { FormEvent, useState } from "react";
 import {
   Bell,
   Menu,
-  Mic,
   Play,
   Plus,
   Search,
@@ -20,13 +19,14 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { Avatar } from "@/components/ui/user-avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/SidebarProvider";
+import { AvatarMenu } from "@/components/auth/AvatarMenu";
 
 export function Topbar() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { toggle } = useSidebar();
   const [query, setQuery] = useState("");
 
@@ -44,9 +44,9 @@ export function Topbar() {
           type="button"
           variant="ghost"
           size="icon-lg"
-          className="size-10"
+          className="hidden size-10 md:inline-flex"
           onClick={toggle}
-          aria-label="Toggle menu"
+          aria-label="Toggle sidebar"
         >
           <Menu className="size-6" />
         </Button>
@@ -68,40 +68,31 @@ export function Topbar() {
           onSubmit={handleSearch}
           className="flex w-full max-w-[640px] items-stretch gap-3"
         >
-          <InputGroup className="h-10 flex-1 rounded-[var(--radius-pill)] bg-muted">
+          <InputGroup className="h-11 flex-1 overflow-hidden rounded-[var(--radius-pill)] bg-muted focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0">
             <InputGroupInput
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search"
-              className="h-10 rounded-l-[var(--radius-pill)] bg-muted pl-4"
+              className="h-11 rounded-l-[var(--radius-pill)] bg-muted pl-4"
             />
             <InputGroupAddon align="inline-end" className="p-0">
               <InputGroupButton
                 type="submit"
                 variant="secondary"
-                className="h-10 w-16 rounded-r-[var(--radius-pill)] rounded-l-none border-l border-border bg-secondary px-0 hover:bg-secondary/80"
+                className="h-11 w-16 rounded-r-[var(--radius-pill)] rounded-l-none border-l border-border bg-secondary px-0 hover:bg-secondary/80"
                 aria-label="Search"
               >
                 <Search className="size-5" />
               </InputGroupButton>
             </InputGroupAddon>
           </InputGroup>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-lg"
-            className="hidden size-10 lg:inline-flex"
-            aria-label="Search with voice"
-          >
-            <Mic className="size-5" />
-          </Button>
         </form>
       </div>
 
       <div className="ml-auto flex shrink-0 items-center justify-end gap-1 sm:gap-2 md:ml-0">
         <Link
-          href="/search"
+          href="/search?focus=1"
           aria-label="Search"
           className={cn(
             buttonVariants({ variant: "ghost", size: "icon-lg" }),
@@ -115,7 +106,7 @@ export function Topbar() {
           href="/upload"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "h-9 gap-2 rounded-[var(--radius-pill)] no-underline hover:no-underline"
+            "hidden h-9 gap-2 rounded-[var(--radius-pill)] no-underline hover:no-underline md:inline-flex"
           )}
         >
           <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border">
@@ -124,7 +115,11 @@ export function Topbar() {
           <span className="hidden sm:inline">Create</span>
         </Link>
 
-        {session?.user ? (
+        {status === "loading" ? (
+          <div className="ml-1 flex items-center gap-2">
+            <Skeleton className="size-10 rounded-full" />
+          </div>
+        ) : session?.user ? (
           <>
             <Button
               type="button"
@@ -135,17 +130,7 @@ export function Topbar() {
             >
               <Bell className="size-6" />
             </Button>
-            <Link
-              href="/studio"
-              className="ml-1 flex size-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-              aria-label="Account"
-            >
-              <Avatar
-                src={session.user.image}
-                name={session.user.name}
-                size="md"
-              />
-            </Link>
+            <AvatarMenu session={session} />
           </>
         ) : (
           <Link

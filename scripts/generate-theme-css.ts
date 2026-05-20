@@ -30,6 +30,7 @@ const css = `/* AUTO-GENERATED — do not edit directly. Change theme in themes/
   --color-ink:                  ${c.ink};
   --color-body:                 ${c.body};
   --color-muted:                ${c.muted};
+  --color-muted-text:           ${c.muted};
   --color-muted-bg:             ${c.surfaceSoft};
   --color-muted-soft:           ${c.mutedSoft};
   --color-on-dark:              ${c.onDark};

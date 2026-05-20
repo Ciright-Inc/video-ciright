@@ -11,7 +11,7 @@ interface CommentListProps {
 export function CommentList({ comments }: CommentListProps) {
   if (comments.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted">No comments yet.</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">No comments yet.</p>
     );
   }
 
@@ -49,7 +49,7 @@ function CommentRow({ comment }: { comment: CommentItem }) {
       <div className="min-w-0 flex-1">
         <p className="text-xs text-ink">
           <span className="font-medium">@{displayName.replace(/\s+/g, "").toLowerCase()}</span>
-          <span className="ml-2 text-muted">
+          <span className="ml-2 text-muted-foreground">
             {formatDistanceToNow(new Date(comment.createdAt), {
               addSuffix: true,
             })}
