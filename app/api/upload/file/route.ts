@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const kind = form.get("kind");
     const file = form.get("file");
+    const videoId = form.get("videoId");
 
     if (kind !== "video" && kind !== "thumbnail") {
       return NextResponse.json(

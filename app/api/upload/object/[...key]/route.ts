@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     }
 
     const bytes = await object.Body.transformToByteArray();
-    return new Response(bytes, {
+    return new Response(Buffer.from(bytes), {
       status: 200,
       headers: {
         "Content-Type": object.ContentType ?? "application/octet-stream",

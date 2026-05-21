@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { videoListSelect } from "@/lib/data/videos";
 import { isMissingWatchHistoryTableError } from "@/lib/prisma-errors";
 
 const PAGE_SIZE = 50;
+
+type WatchHistoryWithVideo = Prisma.WatchHistoryGetPayload<{
+  include: { video: { select: typeof videoListSelect } };
+}>;
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -16,7 +21,7 @@ export async function GET(request: Request) {
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
   const skip = (page - 1) * PAGE_SIZE;
 
-  let items: Awaited<ReturnType<typeof prisma.watchHistory.findMany>> = [];
+  let items: WatchHistoryWithVideo[] = [];
   let total = 0;
 
   try {
