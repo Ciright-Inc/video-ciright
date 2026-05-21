@@ -93,6 +93,13 @@ function overallPercent(
   return base + slice * 0.35;
 }
 
+function progressTitle(step: UploadStep, current?: StepConfig): string {
+  if (step === "transcoding") return "Processing your video";
+  if (current?.label === "Prepare") return "Preparing upload";
+  if (current?.label === "Publish") return "Publishing";
+  return `Uploading ${current?.label.toLowerCase()}`;
+}
+
 type UploadProgressPanelProps = {
   step: UploadStep;
   skipsVideoUpload: boolean;
@@ -139,19 +146,15 @@ export function UploadProgressPanel({
                 id="upload-progress-title"
                 className="text-lg font-semibold tracking-tight"
               >
-                {current?.label === "Prepare"
-                  ? "Preparing upload"
-                  : current?.label === "Publish"
-                    ? "Publishing"
-                    : current?.label === "Process"
-                      ? "Processing video"
-                      : `Uploading ${current?.label.toLowerCase()}`}
+                {progressTitle(step, current)}
               </CardTitle>
               <CardDescription
                 id="upload-progress-desc"
                 className="text-sm leading-relaxed"
               >
-                {current?.description}
+                {step === "transcoding"
+                  ? "We're converting your upload to adaptive streaming. This page will refresh automatically when it's ready."
+                  : current?.description}
                 {step === "uploading-video" && videoFileName ? (
                   <span className="mt-1 block truncate font-medium text-foreground">
                     {videoFileName}
@@ -247,8 +250,9 @@ export function UploadProgressPanel({
         </ol>
 
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Keep this tab open until publishing finishes. Large videos may take a
-          few minutes.
+          {step === "transcoding"
+            ? "Keep this tab open. Large videos may take a few minutes to become playable."
+            : "Keep this tab open until publishing finishes. Large videos may take a few minutes."}
         </p>
       </CardContent>
     </Card>

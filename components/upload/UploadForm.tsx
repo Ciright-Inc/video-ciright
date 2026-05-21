@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createId } from "@paralleldrive/cuid2";
+import type { VideoStatus } from "@prisma/client";
 import {
   CirclePlayIcon,
   ImagePlusIcon,
@@ -57,6 +58,14 @@ const ACCEPTED_VIDEO_TYPES = [
 const TITLE_MAX = 100;
 const DESC_MAX = 5000;
 const DRAFT_KEY = "upload-video-draft";
+const VIDEO_READY_POLL_INTERVAL_MS = 5000;
+const VIDEO_READY_TIMEOUT_MS = 30 * 60 * 1000;
+
+type VideoStatusResponse = {
+  status?: VideoStatus;
+  videoUrl?: string;
+  error?: string;
+};
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) {
@@ -68,6 +77,34 @@ function formatFileSize(bytes: number): string {
 function fileExtension(name: string): string {
   const ext = name.split(".").pop();
   return ext ? ext.toUpperCase() : "VIDEO";
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForVideoReady(videoId: string): Promise<void> {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < VIDEO_READY_TIMEOUT_MS) {
+    const res = await fetch(`/api/videos/${videoId}`, { cache: "no-store" });
+    const data = (await res.json().catch(() => ({}))) as VideoStatusResponse;
+
+    if (!res.ok) {
+      throw new Error(data.error ?? "Could not check video processing status");
+    }
+
+    if (data.status === "READY") return;
+    if (data.status === "FAILED") {
+      throw new Error(
+        "Your video could not be converted for streaming. Try uploading again."
+      );
+    }
+
+    await wait(VIDEO_READY_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("Video processing is taking longer than expected.");
 }
 
 export function UploadForm() {
@@ -510,6 +547,7 @@ export function UploadForm() {
 
         if (willTranscode && data.status === "PROCESSING") {
           setUploadStep("transcoding");
+          await waitForVideoReady(data.id);
         }
 
         localStorage.removeItem(DRAFT_KEY);

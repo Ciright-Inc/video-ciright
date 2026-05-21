@@ -27,6 +27,18 @@ function formatPlaybackSpeed(rate: number) {
 type SeekFlash = { side: "left" | "right"; seconds: number; id: number };
 type SourceStatus = "loading" | "ready" | "error";
 
+type QualityLevel = {
+  index: number;
+  height: number;
+  label: string;
+};
+
+const AUTO_QUALITY = -1;
+
+function formatQualityLabel(height: number): string {
+  return `${height}p`;
+}
+
 export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,9 +47,18 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
   const progressRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const qualitySwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const lastClickRef = useRef(0);
   const speedMenuRef = useRef<HTMLDivElement>(null);
+  const qualityMenuRef = useRef<HTMLDivElement>(null);
   const durationSyncedRef = useRef(false);
+  const scrubbingRef = useRef(false);
+  const scrubListenersRef = useRef<{
+    move: (e: MouseEvent) => void;
+    up: (e: MouseEvent) => void;
+  } | null>(null);
 
   const [sourceStatus, setSourceStatus] = useState<SourceStatus>(
     src ? "loading" : "error"
@@ -53,6 +74,11 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
   const [buffered, setBuffered] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
+  const [currentQuality, setCurrentQuality] = useState(AUTO_QUALITY);
+  const [qualityMenuOpen, setQualityMenuOpen] = useState(false);
+  const [switchingQuality, setSwitchingQuality] = useState(false);
+  const [buffering, setBuffering] = useState(false);
 
   const revealControls = useCallback(() => {
     setShowControls(true);
@@ -114,10 +140,38 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
       if (video) video.playbackRate = rate;
       setPlaybackRate(rate);
       setSpeedMenuOpen(false);
+      setQualityMenuOpen(false);
       revealControls();
     },
     [revealControls]
   );
+
+  const setQuality = useCallback(
+    (level: number) => {
+      const hls = hlsRef.current;
+      if (!hls) return;
+      if (level !== currentQuality) {
+        setSwitchingQuality(true);
+        if (qualitySwitchTimerRef.current) {
+          clearTimeout(qualitySwitchTimerRef.current);
+        }
+        qualitySwitchTimerRef.current = setTimeout(() => {
+          setSwitchingQuality(false);
+        }, 4000);
+      }
+      hls.currentLevel = level;
+      setCurrentQuality(level);
+      setQualityMenuOpen(false);
+      setSpeedMenuOpen(false);
+      revealControls();
+    },
+    [currentQuality, revealControls]
+  );
+
+  const qualityButtonLabel =
+    currentQuality === AUTO_QUALITY
+      ? "Auto"
+      : (qualityLevels.find((l) => l.index === currentQuality)?.label ?? "Auto");
 
   const toggleFullscreen = useCallback(async () => {
     const el = containerRef.current;
@@ -130,18 +184,83 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
     revealControls();
   }, [revealControls]);
 
-  const handleProgressClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      e.stopPropagation();
+  const detachScrubListeners = useCallback(() => {
+    const listeners = scrubListenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("mousemove", listeners.move);
+    window.removeEventListener("mouseup", listeners.up);
+    scrubListenersRef.current = null;
+    scrubbingRef.current = false;
+  }, []);
+
+  const seekFromClientX = useCallback(
+    (clientX: number) => {
       const video = videoRef.current;
       const bar = progressRef.current;
       if (!video || !bar || !video.duration) return;
       const rect = bar.getBoundingClientRect();
-      const ratio = (e.clientX - rect.left) / rect.width;
-      video.currentTime = ratio * video.duration;
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const nextTime = ratio * video.duration;
+      video.currentTime = nextTime;
+      setCurrentTime(nextTime);
       revealControls();
     },
     [revealControls]
+  );
+
+  const handleProgressClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      seekFromClientX(e.clientX);
+    },
+    [seekFromClientX]
+  );
+
+  const handleProgressMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const video = videoRef.current;
+      if (!video?.duration) return;
+
+      detachScrubListeners();
+      scrubbingRef.current = true;
+      seekFromClientX(e.clientX);
+
+      const onMove = (ev: MouseEvent) => {
+        if (!scrubbingRef.current) return;
+        seekFromClientX(ev.clientX);
+      };
+      const onUp = (ev: MouseEvent) => {
+        if (!scrubbingRef.current) return;
+        seekFromClientX(ev.clientX);
+        detachScrubListeners();
+      };
+
+      scrubListenersRef.current = { move: onMove, up: onUp };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [detachScrubListeners, seekFromClientX]
+  );
+
+  const handleProgressMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!scrubbingRef.current) return;
+      e.stopPropagation();
+      seekFromClientX(e.clientX);
+    },
+    [seekFromClientX]
+  );
+
+  const handleProgressMouseUp = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!scrubbingRef.current) return;
+      e.stopPropagation();
+      seekFromClientX(e.clientX);
+      detachScrubListeners();
+    },
+    [detachScrubListeners, seekFromClientX]
   );
 
   const handleSurfaceClick = useCallback(
@@ -182,6 +301,11 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setQualityLevels([]);
+    setCurrentQuality(AUTO_QUALITY);
+    setQualityMenuOpen(false);
+    setSwitchingQuality(false);
+    setBuffering(false);
 
     const isCurrent = () => loadIdRef.current === loadId;
 
@@ -205,7 +329,31 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
           hlsRef.current = hls;
           hls.loadSource(src);
           hls.attachMedia(video);
-          hls.on(Hls.Events.MANIFEST_PARSED, markReady);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (!isCurrent()) return;
+            const levels = hls.levels
+              .map((level, index) => ({
+                index,
+                height: level.height,
+                label: formatQualityLabel(level.height),
+              }))
+              .filter((level) => level.height > 0)
+              .sort((a, b) => b.height - a.height);
+            setQualityLevels(levels);
+            setCurrentQuality(hls.currentLevel);
+            markReady();
+          });
+          hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
+            if (!isCurrent()) return;
+            setCurrentQuality(
+              hls.autoLevelEnabled ? AUTO_QUALITY : data.level
+            );
+            setSwitchingQuality(false);
+            if (qualitySwitchTimerRef.current) {
+              clearTimeout(qualitySwitchTimerRef.current);
+              qualitySwitchTimerRef.current = null;
+            }
+          });
           hls.on(Hls.Events.ERROR, (_, data) => {
             if (data.fatal) markError();
           });
@@ -240,6 +388,10 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
     return () => {
       hlsRef.current?.destroy();
       hlsRef.current = null;
+      setQualityLevels([]);
+      setCurrentQuality(AUTO_QUALITY);
+      setSwitchingQuality(false);
+      setBuffering(false);
       video.pause();
     };
   }, [src]);
@@ -284,12 +436,20 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
       setVolume(video.volume);
       setMuted(video.muted);
     };
+    const onWaiting = () => setBuffering(true);
+    const onCanPlay = () => {
+      setBuffering(false);
+      setSwitchingQuality(false);
+    };
 
     video.addEventListener("play", onPlay);
     video.addEventListener("pause", onPause);
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("loadedmetadata", onLoadedMetadata);
     video.addEventListener("volumechange", onVolumeChange);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("canplay", onCanPlay);
+    video.addEventListener("playing", onCanPlay);
 
     return () => {
       video.removeEventListener("play", onPlay);
@@ -297,8 +457,17 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("loadedmetadata", onLoadedMetadata);
       video.removeEventListener("volumechange", onVolumeChange);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("canplay", onCanPlay);
+      video.removeEventListener("playing", onCanPlay);
     };
-  }, [videoId]);
+  }, [videoId, src]);
+
+  useEffect(() => {
+    return () => {
+      detachScrubListeners();
+    };
+  }, [detachScrubListeners]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -370,22 +539,34 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      if (qualitySwitchTimerRef.current) {
+        clearTimeout(qualitySwitchTimerRef.current);
+      }
     };
   }, []);
 
   useEffect(() => {
-    if (!speedMenuOpen) return;
+    if (!speedMenuOpen && !qualityMenuOpen) return;
     const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
       if (
+        speedMenuOpen &&
         speedMenuRef.current &&
-        !speedMenuRef.current.contains(e.target as Node)
+        !speedMenuRef.current.contains(target)
       ) {
         setSpeedMenuOpen(false);
+      }
+      if (
+        qualityMenuOpen &&
+        qualityMenuRef.current &&
+        !qualityMenuRef.current.contains(target)
+      ) {
+        setQualityMenuOpen(false);
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [speedMenuOpen]);
+  }, [speedMenuOpen, qualityMenuOpen]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -393,11 +574,13 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
   }, [playbackRate, src]);
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const showPlaybackSpinner =
+    sourceStatus === "ready" && (switchingQuality || (playing && buffering));
 
   return (
     <div
       ref={containerRef}
-      className="group/player relative aspect-video w-full overflow-hidden rounded-[var(--radius-lg)] bg-surface-dark"
+      className="group/player relative aspect-video w-full overflow-hidden rounded-lg bg-surface-dark"
       onMouseMove={revealControls}
       onMouseLeave={() => playing && setShowControls(false)}
     >
@@ -413,6 +596,15 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
       {sourceStatus === "loading" && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface-dark/40">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-on-dark/30 border-t-on-dark" />
+        </div>
+      )}
+
+      {showPlaybackSpinner && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface-dark/20">
+          <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface-dark/70 px-4 py-3 text-on-dark backdrop-blur-sm">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-on-dark/30 border-t-on-dark" />
+            <span className="text-xs font-medium">Switching quality</span>
+          </div>
         </div>
       )}
 
@@ -447,7 +639,7 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
 
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent pt-12 transition-opacity duration-200",
+          "pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent pt-12 transition-opacity duration-200",
           showControls ? "opacity-100" : "opacity-0"
         )}
       >
@@ -463,8 +655,11 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
             aria-valuemax={duration}
             aria-valuenow={currentTime}
             tabIndex={0}
-            className="group/progress relative mb-2 h-1 cursor-pointer rounded-full bg-white/30 transition-[height] hover:h-1.5"
+            className="group/progress relative mb-2 h-1 cursor-pointer rounded-full bg-white/30 transition-[height] hover:h-1.5 select-none"
             onClick={handleProgressClick}
+            onMouseDown={handleProgressMouseDown}
+            onMouseMove={handleProgressMouseMove}
+            onMouseUp={handleProgressMouseUp}
             onKeyDown={(e) => {
               if (e.key === "ArrowLeft") seekBy(-5);
               if (e.key === "ArrowRight") seekBy(5);
@@ -533,12 +728,31 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
 
             <span className="flex-1" />
 
+            {qualityLevels.length > 0 && (
+              <QualityMenu
+                ref={qualityMenuRef}
+                open={qualityMenuOpen}
+                label={qualityButtonLabel}
+                levels={qualityLevels}
+                currentLevel={currentQuality}
+                disabled={sourceStatus !== "ready"}
+                onToggle={() => {
+                  setQualityMenuOpen((o) => !o);
+                  setSpeedMenuOpen(false);
+                }}
+                onSelect={setQuality}
+              />
+            )}
+
             <PlaybackSpeedMenu
               ref={speedMenuRef}
               open={speedMenuOpen}
               playbackRate={playbackRate}
               disabled={sourceStatus !== "ready"}
-              onToggle={() => setSpeedMenuOpen((o) => !o)}
+              onToggle={() => {
+                setSpeedMenuOpen((o) => !o);
+                setQualityMenuOpen(false);
+              }}
               onSelect={setSpeed}
             />
 
@@ -567,6 +781,82 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
     </div>
   );
 }
+
+const QualityMenu = forwardRef<
+  HTMLDivElement,
+  {
+    open: boolean;
+    label: string;
+    levels: QualityLevel[];
+    currentLevel: number;
+    disabled?: boolean;
+    onToggle: () => void;
+    onSelect: (level: number) => void;
+  }
+>(function QualityMenu(
+  { open, label, levels, currentLevel, disabled, onToggle, onSelect },
+  ref
+) {
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled}
+        className={cn(
+          "min-w-9 rounded-full px-2 py-1.5 text-xs font-medium tabular-nums transition-colors duration-200",
+          "hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-dark",
+          "disabled:opacity-40",
+          open && "bg-white/15"
+        )}
+        aria-label="Video quality"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        {label}
+      </button>
+      {open && (
+        <ul
+          role="listbox"
+          aria-label="Video quality"
+          className="absolute bottom-full right-0 mb-2 min-w-24 overflow-hidden rounded-md border border-hairline bg-canvas py-1 text-ink shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
+        >
+          <li role="option" aria-selected={currentLevel === AUTO_QUALITY}>
+            <button
+              type="button"
+              onClick={() => onSelect(AUTO_QUALITY)}
+              className={cn(
+                "block min-h-9 w-full px-3 py-2 text-left text-xs text-ink transition-colors duration-150",
+                "hover:bg-surface-strong focus-visible:bg-surface-strong focus-visible:outline-none",
+                currentLevel === AUTO_QUALITY && "bg-surface-soft font-semibold"
+              )}
+            >
+              Auto
+            </button>
+          </li>
+          {levels.map((level) => {
+            const selected = currentLevel === level.index;
+            return (
+              <li key={level.index} role="option" aria-selected={selected}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(level.index)}
+                  className={cn(
+                    "block min-h-9 w-full px-3 py-2 text-left text-xs tabular-nums text-ink transition-colors duration-150",
+                    "hover:bg-surface-strong focus-visible:bg-surface-strong focus-visible:outline-none",
+                    selected && "bg-surface-soft font-semibold"
+                  )}
+                >
+                  {level.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+});
 
 const PlaybackSpeedMenu = forwardRef<
   HTMLDivElement,
