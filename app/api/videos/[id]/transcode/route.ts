@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { tryExtractKeyFromPublicObjectUrl } from "@/lib/s3";
-import {
-  buildTranscodeCallbackUrl,
-  isTranscodingEnabled,
-  triggerTranscode,
-} from "@/lib/transcode";
+import { isTranscodingEnabled, triggerTranscode } from "@/lib/transcode";
 import { VideoStatus } from "@prisma/client";
 
 interface RouteParams {
@@ -21,7 +20,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
   if (!isTranscodingEnabled()) {
     return NextResponse.json(
-      { error: "Transcoder is not configured" },
+      { error: "Transcoding is not configured" },
       { status: 503 }
     );
   }
@@ -52,7 +51,6 @@ export async function POST(_request: Request, { params }: RouteParams) {
     videoId: id,
     channelId: video.channelId,
     s3Key,
-    callbackUrl: buildTranscodeCallbackUrl(id),
   });
 
   if (!result.ok) {

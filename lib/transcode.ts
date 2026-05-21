@@ -1,70 +1,51 @@
-function getTranscoderUrl(): string | null {
-  return process.env.TRANSCODER_URL?.replace(/\/$/, "") ?? null;
-}
+import { after } from "next/server";
+import { runTranscodeJob } from "@/lib/transcode-job";
 
 function getTranscodeSecret(): string | null {
   return process.env.TRANSCODE_SECRET ?? null;
 }
 
+function hasAwsForTranscode(): boolean {
+  const region = process.env.AWS_REGION;
+  const accessKey =
+    process.env.AWS_ACCESS_KEY_ID ?? process.env.AWS_ACCESS_KEY;
+  const secretKey =
+    process.env.AWS_SECRET_ACCESS_KEY ?? process.env.AWS_SECRET_KEY;
+  return Boolean(region && accessKey && secretKey);
+}
+
 export function isTranscodingEnabled(): boolean {
-  return Boolean(getTranscoderUrl() && getTranscodeSecret());
+  return hasAwsForTranscode() && Boolean(getTranscodeSecret());
 }
 
 export type TriggerTranscodeOptions = {
   videoId: string;
   channelId: string;
   s3Key: string;
-  callbackUrl: string;
 };
 
-export async function triggerTranscode(
+/**
+ * Schedules HLS transcoding (240p / 720p / 1080p) after the HTTP response is sent.
+ * Must be called from a Route Handler or Server Action in the same request.
+ */
+export function triggerTranscode(
   options: TriggerTranscodeOptions
-): Promise<{ ok: boolean; error?: string }> {
-  const baseUrl = getTranscoderUrl();
-  const secret = getTranscodeSecret();
-
-  if (!baseUrl || !secret) {
-    return { ok: false, error: "Transcoder is not configured" };
+): { ok: boolean; error?: string } {
+  if (!getTranscodeSecret()) {
+    return { ok: false, error: "TRANSCODE_SECRET is not configured" };
   }
 
-  try {
-    const response = await fetch(`${baseUrl}/transcode`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...options,
-        secret,
-      }),
-    });
+  if (!hasAwsForTranscode()) {
+    return { ok: false, error: "AWS credentials are not configured" };
+  }
 
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-      };
-      return {
-        ok: false,
-        error: data.error ?? `Transcoder returned ${response.status}`,
-      };
+  after(async () => {
+    try {
+      await runTranscodeJob(options);
+    } catch (err) {
+      console.error(`Transcode failed for ${options.videoId}:`, err);
     }
+  });
 
-    return { ok: true };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Failed to reach transcoder",
-    };
-  }
-}
-
-export function buildTranscodeCallbackUrl(videoId: string): string {
-  const authUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL;
-  const vercelUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : null;
-  const base =
-    authUrl?.replace(/\/$/, "") ??
-    vercelUrl ??
-    "http://localhost:3000";
-
-  return `${base}/api/videos/${videoId}/transcode-complete`;
+  return { ok: true };
 }

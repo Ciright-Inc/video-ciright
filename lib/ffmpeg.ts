@@ -1,13 +1,23 @@
+import { createRequire } from "node:module";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import ffmpeg from "fluent-ffmpeg";
 
+const require = createRequire(import.meta.url);
+const ffmpegBin = require("ffmpeg-static") as string | undefined;
+const ffprobeBin = (require("ffprobe-static") as { path: string }).path;
+
+if (ffmpegBin) {
+  ffmpeg.setFfmpegPath(ffmpegBin);
+}
+ffmpeg.setFfprobePath(ffprobeBin);
+
 const HLS_SEGMENT_SECONDS = 6;
 
 const VARIANTS = [
+  { name: "1080p", height: 1080, videoBitrate: "5000k", audioBitrate: "192k" },
   { name: "720p", height: 720, videoBitrate: "2500k", audioBitrate: "128k" },
-  { name: "480p", height: 480, videoBitrate: "1200k", audioBitrate: "96k" },
-  { name: "360p", height: 360, videoBitrate: "800k", audioBitrate: "96k" },
+  { name: "240p", height: 240, videoBitrate: "400k", audioBitrate: "64k" },
 ] as const;
 
 export type TranscodeResult = {
@@ -97,15 +107,15 @@ async function writeMasterPlaylist(
   const lines = ["#EXTM3U", "#EXT-X-VERSION:3"];
 
   const bandwidthMap: Record<string, number> = {
+    "1080p": 5_500_000,
     "720p": 2_500_000,
-    "480p": 1_200_000,
-    "360p": 800_000,
+    "240p": 450_000,
   };
 
   const resolutionMap: Record<string, string> = {
+    "1080p": "1920x1080",
     "720p": "1280x720",
-    "480p": "854x480",
-    "360p": "640x360",
+    "240p": "426x240",
   };
 
   for (const variant of variantPlaylists) {

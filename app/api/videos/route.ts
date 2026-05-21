@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPublicVideos } from "@/lib/data/videos";
-import {
-  buildTranscodeCallbackUrl,
-  isTranscodingEnabled,
-  triggerTranscode,
-} from "@/lib/transcode";
+import { isTranscodingEnabled, triggerTranscode } from "@/lib/transcode";
 import { VideoStatus, Visibility } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -99,7 +98,6 @@ export async function POST(request: Request) {
         videoId: video.id,
         channelId: video.channelId,
         s3Key,
-        callbackUrl: buildTranscodeCallbackUrl(video.id),
       });
 
       if (!transcodeResult.ok) {

@@ -1,3 +1,7 @@
+import { createReadStream, createWriteStream } from "node:fs";
+import { readdir, stat } from "node:fs/promises";
+import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { ReadableStream } from "node:stream/web";
 import {
@@ -280,4 +284,63 @@ export function buildVideoAssetPrefix(
   videoId: string
 ): string {
   return `videos/${channelId}/${videoId}/`;
+}
+
+export async function downloadObjectToFile(
+  key: string,
+  destPath: string
+): Promise<void> {
+  const response = await getObject({ key });
+
+  if (!response.Body) {
+    throw new Error(`S3 object not found: ${key}`);
+  }
+
+  await pipeline(
+    response.Body as NodeJS.ReadableStream,
+    createWriteStream(destPath)
+  );
+}
+
+function contentTypeForHlsFile(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  switch (ext) {
+    case ".m3u8":
+      return "application/vnd.apple.mpegurl";
+    case ".ts":
+      return "video/mp2t";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+export async function uploadDirectoryToS3(
+  localDir: string,
+  s3Prefix: string
+): Promise<void> {
+  const entries = await readdir(localDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const localPath = path.join(localDir, entry.name);
+    if (entry.isDirectory()) {
+      await uploadDirectoryToS3(localPath, `${s3Prefix}${entry.name}/`);
+      continue;
+    }
+
+    const key = `${s3Prefix}${entry.name}`;
+    const fileStat = await stat(localPath);
+
+    await getS3Client().send(
+      new PutObjectCommand({
+        Bucket: getS3Bucket(),
+        Key: key,
+        Body: createReadStream(localPath),
+        ContentLength: fileStat.size,
+        ContentType: contentTypeForHlsFile(localPath),
+        CacheControl: entry.name.endsWith(".m3u8")
+          ? "public, max-age=60"
+          : "public, max-age=31536000, immutable",
+      })
+    );
+  }
 }
