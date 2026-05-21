@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
-import { Home, Plus, User, type LucideIcon } from "lucide-react";
+import { Compass, History, Home, Layers, User, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MOBILE_NAV_INDICATOR_ID = "mobile-nav-active";
@@ -28,20 +28,32 @@ export function MobileNav() {
           active={pathname === "/"}
           reducedMotion={reducedMotion}
         />
-
-        <Link
-          href="/upload"
-          aria-label="Create"
-          className="flex size-11 items-center justify-center rounded-full border border-border bg-surface-strong text-primary shadow-sm transition-colors hover:bg-muted active:scale-95 motion-reduce:active:scale-100"
-        >
-          <Plus className="size-5" strokeWidth={2.5} />
-        </Link>
-
+        <NavItem
+          href="/search"
+          label="Explore"
+          icon={Compass}
+          active={pathname.startsWith("/search")}
+          reducedMotion={reducedMotion}
+        />
+        <NavItem
+          href="/profile/history"
+          label="History"
+          icon={History}
+          active={pathname === "/profile/history"}
+          reducedMotion={reducedMotion}
+        />
+        <NavItem
+          href="/subscriptions"
+          label="Subscriptions"
+          icon={Layers}
+          active={pathname.startsWith("/subscriptions")}
+          reducedMotion={reducedMotion}
+        />
         <NavItem
           href="/profile"
           label="Profile"
           icon={User}
-          active={pathname.startsWith("/profile")}
+          active={pathname === "/profile" || (pathname.startsWith("/profile") && pathname !== "/profile/history")}
           reducedMotion={reducedMotion}
         />
       </div>

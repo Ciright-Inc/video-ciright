@@ -40,8 +40,15 @@ export function Sidebar() {
         )}
       >
         {primaryNavItems.map(({ href, label, icon }) => {
+          const moreSpecificMatch = primaryNavItems.some(
+            (other) =>
+              other.href !== href &&
+              other.href.startsWith(href) &&
+              pathname.startsWith(other.href)
+          );
           const active =
-            pathname === href || (href !== "/" && pathname.startsWith(href));
+            !moreSpecificMatch &&
+            (pathname === href || (href !== "/" && pathname.startsWith(href)));
 
           return (
             <Link
@@ -65,7 +72,7 @@ export function Sidebar() {
                 className={cn(
                   "overflow-hidden whitespace-nowrap",
                   collapsed
-                    ? "max-w-full text-center text-[10px] leading-tight tracking-tight"
+                    ? "max-w-full text-center text-[10px] leading-tight tracking-tighter text-ellipsis"
                     : "text-sm",
                   active && "font-medium"
                 )}
