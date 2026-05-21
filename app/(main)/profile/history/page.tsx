@@ -70,7 +70,7 @@ export default async function ProfileHistoryPage() {
               <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
                 {section.label}
               </h3>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-4">
                 {section.rows.map((row) => (
                   <RelatedVideoCard
                     key={`${row.video.id}-${row.watchedAt.toISOString()}`}
