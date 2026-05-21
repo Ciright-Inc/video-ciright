@@ -315,50 +315,15 @@ export function UploadForm() {
     throw new Error("Add a video or upload a thumbnail image");
   }
 
-  async function getPresignedUpload(
+  function uploadThroughAppRoute(
     file: File,
     kind: "video" | "thumbnail",
-    videoId: string
-  ): Promise<{ uploadUrl: string; publicUrl: string; key: string }> {
-    const res = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fileName: file.name,
-        contentType: file.type,
-        fileSize: file.size,
-        kind,
-        videoId,
-      }),
-    });
-
-    const data = (await res.json()) as {
-      uploadUrl?: string;
-      publicUrl?: string;
-      key?: string;
-      error?: string;
-    };
-
-    if (!res.ok || !data.uploadUrl || !data.publicUrl || !data.key) {
-      throw new Error(data.error ?? "Failed to prepare upload");
-    }
-
-    return {
-      uploadUrl: data.uploadUrl,
-      publicUrl: data.publicUrl,
-      key: data.key,
-    };
-  }
-
-  function uploadToPresignedUrl(
-    file: File,
-    uploadUrl: string,
+    videoId: string,
     onProgress: (percent: number) => void
-  ): Promise<void> {
+  ): Promise<{ publicUrl: string; key: string }> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("PUT", uploadUrl);
-      xhr.setRequestHeader("Content-Type", file.type);
+      xhr.open("POST", "/api/upload/file");
 
       xhr.upload.addEventListener("progress", (event) => {
         if (!event.lengthComputable) return;
@@ -366,12 +331,27 @@ export function UploadForm() {
       });
 
       xhr.addEventListener("load", () => {
+        let data: { publicUrl?: string; key?: string; error?: string } = {};
+        try {
+          data = JSON.parse(xhr.responseText || "{}") as typeof data;
+        } catch {
+          data = {};
+        }
+
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve();
+          if (data.publicUrl && data.key) {
+            resolve({ publicUrl: data.publicUrl, key: data.key });
+            return;
+          }
+          reject(new Error("Upload completed without a storage URL"));
           return;
         }
 
-        reject(new Error(`Upload failed (${xhr.status || "network error"})`));
+        reject(
+          new Error(
+            data.error ?? `Upload failed (${xhr.status || "network error"})`
+          )
+        );
       });
 
       xhr.addEventListener("error", () =>
@@ -385,21 +365,26 @@ export function UploadForm() {
         reject(new Error("Upload was cancelled"))
       );
 
-      xhr.send(file);
+      const form = new FormData();
+      form.set("kind", kind);
+      form.set("videoId", videoId);
+      form.set("file", file);
+      xhr.send(form);
     });
   }
 
-  async function uploadToPresignedUrlWithRetry(
+  async function uploadToStorageWithRetry(
     file: File,
-    uploadUrl: string,
+    kind: "video" | "thumbnail",
+    videoId: string,
     onProgress: (percent: number) => void
-  ): Promise<void> {
+  ): Promise<{ publicUrl: string; key: string }> {
     try {
-      await uploadToPresignedUrl(file, uploadUrl, onProgress);
+      return await uploadThroughAppRoute(file, kind, videoId, onProgress);
     } catch (firstError) {
       onProgress(0);
       try {
-        await uploadToPresignedUrl(file, uploadUrl, onProgress);
+        return await uploadThroughAppRoute(file, kind, videoId, onProgress);
       } catch {
         throw firstError;
       }
@@ -419,12 +404,12 @@ export function UploadForm() {
     }
     onProgress(0);
 
-    const { uploadUrl, publicUrl, key } = await getPresignedUpload(
+    const { publicUrl, key } = await uploadToStorageWithRetry(
       file,
       kind,
-      videoId
+      videoId,
+      onProgress
     );
-    await uploadToPresignedUrlWithRetry(file, uploadUrl, onProgress);
     onProgress(100);
     return { publicUrl, key };
   }
