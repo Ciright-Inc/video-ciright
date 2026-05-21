@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { VideoStatus } from "@prisma/client";
+import { notifyVideoReadyIfPublic } from "@/lib/notifications";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -44,6 +45,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         ...(body.duration != null && { duration: body.duration }),
       },
     });
+    await notifyVideoReadyIfPublic(id);
     return NextResponse.json({ ok: true });
   }
 

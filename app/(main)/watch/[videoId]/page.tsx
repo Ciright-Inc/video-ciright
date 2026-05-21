@@ -23,7 +23,7 @@ export default async function WatchPage({ params }: WatchPageProps) {
   if (!video) notFound();
 
   const [comments, likeStats, related] = await Promise.all([
-    getCommentsByVideoId(videoId),
+    getCommentsByVideoId(videoId, session?.user?.id),
     getVideoLikeStats(videoId),
     getRelatedVideos(videoId, video.channelId),
   ]);

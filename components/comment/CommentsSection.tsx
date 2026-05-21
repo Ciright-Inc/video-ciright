@@ -15,6 +15,9 @@ export interface CommentItem {
   body: string;
   createdAt: Date;
   author: CommentAuthor;
+  likeCount?: number;
+  dislikeCount?: number;
+  userValue?: number;
   replies?: CommentItem[];
 }
 
@@ -65,7 +68,7 @@ export function CommentsSection({ videoId, comments }: CommentsSectionProps) {
 
       <CommentInput videoId={videoId} />
       <div className="mt-6">
-        <CommentList comments={sorted} />
+        <CommentList videoId={videoId} comments={sorted} />
       </div>
     </section>
   );

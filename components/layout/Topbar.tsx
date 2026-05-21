@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FormEvent, useState } from "react";
-import { Bell, Menu, Plus, Search, User } from "lucide-react";
+import { Menu, Plus, Search, User } from "lucide-react";
+import { NotificationMenu } from "@/components/layout/NotificationMenu";
 import { Logo } from "@/components/brand/Logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -115,15 +116,7 @@ export function Topbar() {
           </div>
         ) : session?.user ? (
           <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-lg"
-              className="size-10"
-              aria-label="Notifications"
-            >
-              <Bell className="size-6" />
-            </Button>
+            <NotificationMenu />
             <AvatarMenu session={session} />
           </>
         ) : (

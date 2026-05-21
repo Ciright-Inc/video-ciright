@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
+import { LayoutGroup, motion, useReducedMotion } from "motion/react";
+import type { LucideIcon } from "lucide-react";
 import { primaryNavItems } from "@/components/layout/nav-items";
 import { SidebarNavIcon } from "@/components/layout/SidebarNavIcon";
 import { cn } from "@/lib/utils";
@@ -10,10 +11,17 @@ import { useSidebar } from "@/components/providers/SidebarProvider";
 
 const SIDEBAR_WIDTH_COLLAPSED = 72;
 const SIDEBAR_WIDTH_EXPANDED = 240;
+const SIDEBAR_NAV_INDICATOR_ID = "sidebar-nav-active";
 
 const sidebarTransition = {
   duration: 0.28,
   ease: [0.4, 0, 0.2, 1] as const,
+};
+
+const indicatorTransition = {
+  type: "spring" as const,
+  stiffness: 500,
+  damping: 35,
 };
 
 export function Sidebar() {
@@ -33,56 +41,93 @@ export function Sidebar() {
       transition={transition}
       className="hidden h-full shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar md:flex"
     >
-      <nav
+      <LayoutGroup id="sidebar-nav">
+        <nav
+          className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-y-auto",
+            collapsed ? "items-stretch gap-1 py-3" : "gap-0.5 p-2"
+          )}
+        >
+          {primaryNavItems.map(({ href, label, icon }) => {
+            const moreSpecificMatch = primaryNavItems.some(
+              (other) =>
+                other.href !== href &&
+                other.href.startsWith(href) &&
+                pathname.startsWith(other.href)
+            );
+            const active =
+              !moreSpecificMatch &&
+              (pathname === href ||
+                (href !== "/" && pathname.startsWith(href)));
+
+            return (
+              <SidebarNavItem
+                key={href}
+                href={href}
+                label={label}
+                icon={icon}
+                active={active}
+                collapsed={collapsed}
+                reducedMotion={reducedMotion}
+              />
+            );
+          })}
+        </nav>
+      </LayoutGroup>
+    </motion.aside>
+  );
+}
+
+function SidebarNavItem({
+  href,
+  label,
+  icon,
+  active,
+  collapsed,
+  reducedMotion,
+}: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  active: boolean;
+  collapsed: boolean;
+  reducedMotion: boolean | null;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative flex min-h-11 select-none no-underline outline-none transition-colors duration-200 hover:no-underline focus-visible:ring-2 focus-visible:ring-sidebar-ring/50",
+        collapsed
+          ? "mx-auto w-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5"
+          : "w-full flex-row items-center gap-3 rounded-xl px-3 py-2.5",
+        active
+          ? "text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+      )}
+    >
+      {active && (
+        <motion.div
+          layoutId={SIDEBAR_NAV_INDICATOR_ID}
+          className="absolute inset-0 rounded-xl bg-sidebar-accent"
+          transition={reducedMotion ? { duration: 0 } : indicatorTransition}
+        />
+      )}
+      <span className="relative z-10 flex shrink-0 items-center justify-center">
+        <SidebarNavIcon icon={icon} active={active} />
+      </span>
+      <span
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto",
-          collapsed ? "items-stretch gap-1 py-3" : "gap-0.5 p-2"
+          "relative z-10 overflow-hidden whitespace-nowrap",
+          collapsed
+            ? "max-w-full text-center text-[10px] leading-tight tracking-tighter text-ellipsis"
+            : "text-sm",
+          active && "font-medium"
         )}
       >
-        {primaryNavItems.map(({ href, label, icon }) => {
-          const moreSpecificMatch = primaryNavItems.some(
-            (other) =>
-              other.href !== href &&
-              other.href.startsWith(href) &&
-              pathname.startsWith(other.href)
-          );
-          const active =
-            !moreSpecificMatch &&
-            (pathname === href || (href !== "/" && pathname.startsWith(href)));
-
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "group relative flex min-h-11 select-none no-underline outline-none transition-colors duration-200 hover:no-underline focus-visible:ring-2 focus-visible:ring-sidebar-ring/50",
-                collapsed
-                  ? "mx-auto w-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5"
-                  : "w-full flex-row items-center gap-3 rounded-xl px-3 py-2.5",
-                active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <span className="flex shrink-0 items-center justify-center">
-                <SidebarNavIcon icon={icon} active={active} />
-              </span>
-              <span
-                className={cn(
-                  "overflow-hidden whitespace-nowrap",
-                  collapsed
-                    ? "max-w-full text-center text-[10px] leading-tight tracking-tighter text-ellipsis"
-                    : "text-sm",
-                  active && "font-medium"
-                )}
-              >
-                {label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
-    </motion.aside>
+        {label}
+      </span>
+    </Link>
   );
 }

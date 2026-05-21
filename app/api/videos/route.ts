@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPublicVideos } from "@/lib/data/videos";
 import { isTranscodingEnabled, triggerTranscode } from "@/lib/transcode";
+import { notifyVideoReadyIfPublic } from "@/lib/notifications";
 import { VideoStatus, Visibility } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -92,6 +93,10 @@ export async function POST(request: Request) {
     };
 
     const video = await prisma.video.create({ data });
+
+    if (!needsTranscode && video.status === VideoStatus.READY) {
+      await notifyVideoReadyIfPublic(video.id);
+    }
 
     if (needsTranscode && s3Key) {
       const transcodeResult = await triggerTranscode({

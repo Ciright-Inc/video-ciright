@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { NotificationType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCommentsByVideoId } from "@/lib/data/comments";
+import { recordNotification } from "@/lib/notifications";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,7 +13,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "videoId required" }, { status: 400 });
   }
 
-  const comments = await getCommentsByVideoId(videoId);
+  const session = await auth();
+  const comments = await getCommentsByVideoId(
+    videoId,
+    session?.user?.id
+  );
   return NextResponse.json(comments);
 }
 
@@ -42,6 +48,22 @@ export async function POST(request: Request) {
         author: { select: { id: true, name: true, image: true } },
       },
     });
+
+    if (parentId) {
+      const parent = await prisma.comment.findUnique({
+        where: { id: parentId },
+        select: { authorId: true },
+      });
+      if (parent) {
+        await recordNotification({
+          recipientId: parent.authorId,
+          type: NotificationType.COMMENT_REPLY,
+          actorId: session.user.id,
+          commentId: parentId,
+          videoId,
+        });
+      }
+    }
 
     return NextResponse.json(comment, { status: 201 });
   } catch {

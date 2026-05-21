@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { NotificationType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVideoLikeStats } from "@/lib/data/likes";
+import { recordNotification } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -18,6 +20,18 @@ export async function POST(request: Request) {
 
     const userId = session.user.id;
 
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      select: {
+        id: true,
+        channel: { select: { ownerId: true } },
+      },
+    });
+
+    if (!video) {
+      return NextResponse.json({ error: "Video not found" }, { status: 404 });
+    }
+
     if (value === 0) {
       await prisma.like.deleteMany({ where: { userId, videoId } });
     } else {
@@ -26,6 +40,22 @@ export async function POST(request: Request) {
         create: { userId, videoId, value },
         update: { value },
       });
+
+      if (value === 1) {
+        await recordNotification({
+          recipientId: video.channel.ownerId,
+          type: NotificationType.VIDEO_LIKE,
+          actorId: userId,
+          videoId,
+        });
+      } else if (value === -1) {
+        await recordNotification({
+          recipientId: video.channel.ownerId,
+          type: NotificationType.VIDEO_DISLIKE,
+          actorId: userId,
+          videoId,
+        });
+      }
     }
 
     const stats = await getVideoLikeStats(videoId);

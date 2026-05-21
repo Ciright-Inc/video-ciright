@@ -7,6 +7,7 @@ import { createReadStream } from "node:fs";
 import { VideoStatus } from "@prisma/client";
 import { transcodeToHls } from "@/lib/ffmpeg";
 import { prisma } from "@/lib/prisma";
+import { notifyVideoReadyIfPublic } from "@/lib/notifications";
 import {
   buildHlsMasterKey,
   buildHlsPrefix,
@@ -47,6 +48,7 @@ export async function runTranscodeJob(
         ...(durationSeconds != null && { duration: durationSeconds }),
       },
     });
+    await notifyVideoReadyIfPublic(job.videoId);
   } catch (err) {
     await prisma.video
       .update({
