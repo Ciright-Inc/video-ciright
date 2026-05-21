@@ -67,6 +67,15 @@ function stepIndex(steps: StepConfig[], step: UploadStep): number {
   return steps.findIndex((s) => s.id === step);
 }
 
+function uploadSliceSpan(steps: StepConfig[]): number {
+  const hasVideo = steps.some((s) => s.id === "uploading-video");
+  const hasThumb = steps.some((s) => s.id === "uploading-thumbnail");
+  const slice = 100 / steps.length;
+  if (hasVideo && hasThumb) return slice * 2;
+  if (hasVideo || hasThumb) return slice;
+  return 0;
+}
+
 function overallPercent(
   steps: StepConfig[],
   step: UploadStep,
@@ -77,17 +86,18 @@ function overallPercent(
 
   const slice = 100 / steps.length;
   const base = index * slice;
+  const uploadSpan = uploadSliceSpan(steps);
+  const uploadBase =
+    stepIndex(steps, "uploading-video") >= 0
+      ? stepIndex(steps, "uploading-video") * slice
+      : stepIndex(steps, "uploading-thumbnail") * slice;
 
   if (
-    step === "uploading-video" &&
     filePercent !== null &&
-    steps.some((s) => s.id === "uploading-video")
+    uploadSpan > 0 &&
+    (step === "uploading-video" || step === "uploading-thumbnail")
   ) {
-    return base + (filePercent / 100) * slice;
-  }
-
-  if (step === "uploading-thumbnail" && filePercent !== null) {
-    return base + (filePercent / 100) * slice;
+    return uploadBase + (filePercent / 100) * uploadSpan;
   }
 
   return base + slice * 0.35;
@@ -106,6 +116,8 @@ type UploadProgressPanelProps = {
   includesTranscode?: boolean;
   filePercent: number | null;
   videoFileName?: string | null;
+  /** Finished steps (e.g. thumbnail done while video still uploading in parallel) */
+  completedSteps?: UploadStep[];
 };
 
 export function UploadProgressPanel({
@@ -114,10 +126,12 @@ export function UploadProgressPanel({
   includesTranscode = false,
   filePercent,
   videoFileName,
+  completedSteps = [],
 }: UploadProgressPanelProps) {
   const steps = stepsForUpload(skipsVideoUpload, includesTranscode);
   const current = steps.find((s) => s.id === step);
   const activeIndex = stepIndex(steps, step);
+  const completedSet = new Set(completedSteps);
   const percent = Math.min(
     100,
     Math.round(overallPercent(steps, step, filePercent)),
@@ -198,8 +212,8 @@ export function UploadProgressPanel({
           aria-label="Upload steps"
         >
           {steps.map((s, i) => {
-            const done = i < activeIndex;
-            const active = s.id === step;
+            const done = completedSet.has(s.id) || i < activeIndex;
+            const active = s.id === step && !done;
 
             return (
               <li

@@ -131,6 +131,9 @@ export function UploadForm() {
   );
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
   const [uploadStep, setUploadStep] = useState<UploadStep | null>(null);
+  const [completedUploadSteps, setCompletedUploadSteps] = useState<UploadStep[]>(
+    []
+  );
   const [fileUploadPercent, setFileUploadPercent] = useState<number | null>(
     null
   );
@@ -451,6 +454,7 @@ export function UploadForm() {
 
     setLoading(true);
     setUploadStep("preparing");
+    setCompletedUploadSteps([]);
     setFileUploadPercent(null);
 
     try {
@@ -465,9 +469,23 @@ export function UploadForm() {
 
         let videoPercent = 0;
         let thumbPercent = 0;
+        const videoBytes = videoFile!.size;
+        const thumbBytes = thumbnailFile.size;
+        const totalBytes = videoBytes + thumbBytes;
+
         const updateCombinedProgress = () => {
-          setFileUploadPercent(Math.round((videoPercent + thumbPercent) / 2));
-          // Video is the long pole; avoid thumbnail's setUploadStep winning the race.
+          const weighted =
+            totalBytes > 0
+              ? (videoBytes * videoPercent + thumbBytes * thumbPercent) /
+                totalBytes
+              : 0;
+          setFileUploadPercent(Math.round(weighted));
+
+          const finished: UploadStep[] = ["preparing"];
+          if (videoPercent >= 100) finished.push("uploading-video");
+          if (thumbPercent >= 100) finished.push("uploading-thumbnail");
+          setCompletedUploadSteps(finished);
+
           if (videoPercent < 100) {
             setUploadStep("uploading-video");
           } else if (thumbPercent < 100) {
@@ -475,6 +493,7 @@ export function UploadForm() {
           }
         };
 
+        setCompletedUploadSteps(["preparing"]);
         setUploadStep("uploading-video");
         setFileUploadPercent(0);
 
@@ -507,6 +526,11 @@ export function UploadForm() {
         s3Key = videoResult.key;
         willTranscode = true;
 
+        setCompletedUploadSteps([
+          "preparing",
+          "uploading-video",
+          "uploading-thumbnail",
+        ]);
         setUploadStep("saving");
         setFileUploadPercent(null);
 
@@ -531,6 +555,12 @@ export function UploadForm() {
         if (!res.ok) throw new Error(data.error ?? "Upload failed");
 
         if (willTranscode && data.status === "PROCESSING") {
+          setCompletedUploadSteps([
+            "preparing",
+            "uploading-video",
+            "uploading-thumbnail",
+            "saving",
+          ]);
           setUploadStep("transcoding");
           await waitForVideoReady(data.id);
         }
@@ -542,6 +572,7 @@ export function UploadForm() {
       }
 
       setUploadStep("preparing");
+      setCompletedUploadSteps([]);
       setFileUploadPercent(null);
       const thumbnailFile = await resolveThumbnailForUpload();
       const finalThumbnailUrl = (
@@ -554,6 +585,7 @@ export function UploadForm() {
         )
       ).publicUrl;
 
+      setCompletedUploadSteps(["preparing", "uploading-thumbnail"]);
       setUploadStep("saving");
       setFileUploadPercent(null);
 
@@ -588,6 +620,7 @@ export function UploadForm() {
     } finally {
       setLoading(false);
       setUploadStep(null);
+      setCompletedUploadSteps([]);
       setFileUploadPercent(null);
     }
   }
@@ -642,6 +675,7 @@ export function UploadForm() {
           includesTranscode={!useExternalUrl}
           filePercent={fileUploadPercent}
           videoFileName={videoFile?.name}
+          completedSteps={completedUploadSteps}
         />
       )}
 

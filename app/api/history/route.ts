@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { videoListSelect } from "@/lib/data/videos";
+import { recordWatchHistory } from "@/lib/profile/recordWatchHistory";
 import { isMissingWatchHistoryTableError } from "@/lib/prisma-errors";
 
 const PAGE_SIZE = 50;
@@ -72,27 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  try {
-    await prisma.watchHistory.upsert({
-      where: {
-        userId_videoId: {
-          userId: session.user.id,
-          videoId,
-        },
-      },
-      create: {
-        userId: session.user.id,
-        videoId,
-      },
-      update: {
-        watchedAt: new Date(),
-      },
-    });
-  } catch (error) {
-    if (!isMissingWatchHistoryTableError(error)) {
-      throw error;
-    }
-  }
+  await recordWatchHistory(session.user.id, videoId);
 
   return NextResponse.json({ ok: true });
 }

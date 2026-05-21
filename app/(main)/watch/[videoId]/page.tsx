@@ -9,6 +9,7 @@ import { VideoInfo } from "@/components/video/VideoInfo";
 import { RelatedVideoList } from "@/components/video/RelatedVideoList";
 import { CommentsSection } from "@/components/comment/CommentsSection";
 import { ViewCounter } from "@/components/video/ViewCounter";
+import { recordWatchHistory } from "@/lib/profile/recordWatchHistory";
 
 interface WatchPageProps {
   params: Promise<{ videoId: string }>;
@@ -36,6 +37,10 @@ export default async function WatchPage({ params }: WatchPageProps) {
     : false;
 
   const isOwner = session?.user?.channelId === video.channelId;
+
+  if (session?.user?.id) {
+    await recordWatchHistory(session.user.id, videoId);
+  }
 
   return (
     <div className="mx-auto max-w-[1754px]">

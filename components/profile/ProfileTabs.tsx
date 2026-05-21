@@ -42,25 +42,33 @@ export function ProfileTabs() {
 
   return (
     <LayoutGroup id="profile-tabs">
-      <nav
-        aria-label="Creator hub sections"
-        className="mb-6 flex gap-2 overflow-x-auto py-1 scrollbar-none"
-      >
-        {tabs.map((tab) => {
-          const active = tab.exact
-            ? pathname === tab.href
-            : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+      <div className="relative -mx-4 mb-6 min-w-0 sm:mx-0">
+        <nav
+          aria-label="Creator hub sections"
+          className={cn(
+            "flex min-w-0 gap-1.5 overflow-x-auto overscroll-x-contain py-1 scrollbar-none",
+            "scroll-smooth scroll-px-4 px-4",
+            "max-sm:snap-x max-sm:snap-mandatory",
+            "sm:gap-2 sm:scroll-px-0 sm:px-0"
+          )}
+        >
+          {tabs.map((tab) => {
+            const active = tab.exact
+              ? pathname === tab.href
+              : pathname === tab.href ||
+                pathname.startsWith(`${tab.href}/`);
 
-          return (
-            <ProfileTabChip
-              key={tab.href}
-              tab={tab}
-              active={active}
-              reducedMotion={reducedMotion}
-            />
-          );
-        })}
-      </nav>
+            return (
+              <ProfileTabChip
+                key={tab.href}
+                tab={tab}
+                active={active}
+                reducedMotion={reducedMotion}
+              />
+            );
+          })}
+        </nav>
+      </div>
     </LayoutGroup>
   );
 }
@@ -80,8 +88,11 @@ function ProfileTabChip({
     <Link
       href={tab.href}
       aria-current={active ? "page" : undefined}
+      title={tab.label}
       className={cn(
-        "relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        "relative inline-flex shrink-0 snap-start items-center justify-center rounded-full no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        "size-11 gap-0 sm:h-8 sm:w-auto sm:gap-1.5 sm:px-3.5",
+        "text-sm font-medium",
         active
           ? "text-on-primary!"
           : "bg-muted text-body hover:bg-surface-soft hover:text-ink"
@@ -103,7 +114,7 @@ function ProfileTabChip({
       />
       <span
         className={cn(
-          "relative z-10",
+          "relative z-10 max-sm:sr-only",
           active && "font-semibold text-on-primary"
         )}
       >
