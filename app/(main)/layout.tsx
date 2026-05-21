@@ -1,3 +1,6 @@
+// DB-backed pages must render at request time; Railway build has no Postgres access.
+export const dynamic = "force-dynamic";
+
 import { Topbar } from "@/components/layout/Topbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
