@@ -5,7 +5,8 @@
       "AllowedMethods": ["PUT", "GET", "HEAD"],
       "AllowedOrigins": [
         "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "https://video-ciright-production.up.railway.app"
       ],
       "ExposeHeaders": ["ETag"],
       "MaxAgeSeconds": 3600

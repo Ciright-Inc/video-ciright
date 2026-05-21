@@ -4,14 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FormEvent, useState } from "react";
-import {
-  Bell,
-  Menu,
-  Play,
-  Plus,
-  Search,
-  User,
-} from "lucide-react";
+import { Bell, Menu, Plus, Search, User } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   InputGroup,
@@ -56,7 +50,7 @@ export function Topbar() {
           className="flex shrink-0 items-center gap-1 py-1.5 text-foreground no-underline hover:no-underline"
           aria-label="Ciright Video home"
         >
-          <Play className="size-7 fill-primary text-primary" />
+          <Logo className="size-7" />
           <span className="hidden text-lg font-semibold tracking-tight sm:inline">
             Ciright Video
           </span>

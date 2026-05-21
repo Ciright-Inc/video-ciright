@@ -238,3 +238,22 @@ a {
   color: inherit;
   opacity: 0.88;
 }
+
+@keyframes auth-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes auth-progress {
+  from {
+    width: 38%;
+  }
+  to {
+    width: 62%;
+  }
+}
