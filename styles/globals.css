@@ -257,3 +257,9 @@ a {
     width: 62%;
   }
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

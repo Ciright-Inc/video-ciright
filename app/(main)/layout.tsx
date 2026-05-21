@@ -4,17 +4,14 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { SidebarProvider } from "@/components/providers/SidebarProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { SessionExpiryWatcher } from "@/components/auth/SessionExpiryWatcher";
-import { auth } from "@/lib/auth";
 
-export default async function MainLayout({
+export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-
   return (
-    <SessionProvider session={session}>
+    <SessionProvider>
       <SidebarProvider>
         <div className="flex h-dvh flex-col overflow-hidden">
           <SessionExpiryWatcher />
