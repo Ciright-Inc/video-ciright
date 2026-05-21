@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
   const skip = (page - 1) * PAGE_SIZE;
 
-  let items: Awaited<ReturnType<typeof prisma.watchHistory.findMany>> = [];
+  let items: Awaited<ReturnType<typeof prisma.watchHistory.findMany<{ include: { video: true } }>>> = [];
   let total = 0;
 
   try {
