@@ -158,6 +158,7 @@ async function main() {
     data: {
       email: "alice@example.com",
       name: "Alice Creator",
+      countryCode: "US",
       passwordHash,
       image: "https://api.dicebear.com/7.x/avataaars/svg?seed=alice",
       channel: {
@@ -177,6 +178,7 @@ async function main() {
     data: {
       email: "bob@example.com",
       name: "Bob Streams",
+      countryCode: "GB",
       passwordHash,
       image: "https://api.dicebear.com/7.x/avataaars/svg?seed=bob",
       channel: {
@@ -196,6 +198,7 @@ async function main() {
     data: {
       email: "carol@example.com",
       name: "Carol Design",
+      countryCode: "IN",
       passwordHash,
       image: "https://api.dicebear.com/7.x/avataaars/svg?seed=carol",
       channel: {

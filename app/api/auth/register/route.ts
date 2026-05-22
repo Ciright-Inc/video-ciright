@@ -2,14 +2,23 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { slugifyHandle } from "@/lib/format";
+import { normalizeCountryCode } from "@/lib/geo/validCountryCode";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, countryCode: rawCountry } = await request.json();
 
     if (!email || !password || password.length < 6) {
       return NextResponse.json(
         { error: "Email and password (min 6 chars) are required" },
+        { status: 400 }
+      );
+    }
+
+    const countryCode = normalizeCountryCode(String(rawCountry ?? ""));
+    if (!countryCode) {
+      return NextResponse.json(
+        { error: "A valid country is required" },
         { status: 400 }
       );
     }
@@ -40,6 +49,7 @@ export async function POST(request: Request) {
       data: {
         email: normalizedEmail,
         name: displayName,
+        countryCode,
         passwordHash,
         channel: {
           create: {

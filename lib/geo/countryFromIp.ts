@@ -5,7 +5,7 @@ const require = createRequire(import.meta.url);
 const PRIVATE_IPV4 =
   /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.|169\.254\.)/;
 const PRIVATE_IPV6 =
-  /^(::1|::|fc|fd|fe80:|::ffff:127\.)/i;
+  /^(::1$|::$|fc[0-9a-f]{2}:|fd[0-9a-f]{2}:|fe80:|::ffff:127\.)/i;
 
 export function isPrivateOrLoopbackIp(ip: string): boolean {
   if (PRIVATE_IPV4.test(ip)) return true;

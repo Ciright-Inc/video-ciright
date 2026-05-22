@@ -127,8 +127,8 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
         <div>
           <h2 className="text-sm font-semibold text-ink">Audience by country</h2>
           <p className="mt-0.5 text-xs text-body">
-            Hotspots show where your channel gets the most activity (from IP or
-            CDN country headers at event time).
+            Hotspots show where your channel gets the most activity (from each
+            viewer&apos;s profile country; anonymous viewers estimated from IP).
           </p>
         </div>
         <Select

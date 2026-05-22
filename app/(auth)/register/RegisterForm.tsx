@@ -5,6 +5,7 @@ import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { MailIcon, UserIcon } from "lucide-react";
+import { CountrySelect } from "@/components/auth/CountrySelect";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ export default function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [countryCode, setCountryCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -32,10 +34,16 @@ export default function RegisterForm() {
     setLoading(true);
     setError("");
 
+    if (!countryCode) {
+      setError("Please select your country");
+      setLoading(false);
+      return;
+    }
+
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, countryCode }),
     });
 
     const data = await res.json();
@@ -131,6 +139,14 @@ export default function RegisterForm() {
             autoComplete="new-password"
             required
             minLength={6}
+            invalid={!!error}
+          />
+
+          <CountrySelect
+            id="register-country"
+            value={countryCode}
+            onChange={setCountryCode}
+            required
             invalid={!!error}
           />
         </FieldGroup>

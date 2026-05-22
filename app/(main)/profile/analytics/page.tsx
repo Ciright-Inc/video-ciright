@@ -47,8 +47,8 @@ export default async function ProfileAnalyticsPage() {
     <div>
       <h2 className="mb-2 text-lg font-semibold text-ink">Analytics</h2>
       <p className="mb-6 text-sm text-body">
-        Views by upload day, top videos, and audience by country (from IP at
-        interaction time).
+        Views by upload day, top videos, and audience by country (from each
+        viewer&apos;s profile country; anonymous viewers estimated from IP).
       </p>
       <ProfileAnalyticsCharts
         viewsByDay={viewsByDay}

@@ -1,7 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getChannelById } from "@/lib/data/channels";
+import { prisma } from "@/lib/prisma";
 import { ChannelForm } from "@/components/profile/ChannelForm";
+import { UserCountryForm } from "@/components/profile/UserCountryForm";
 
 export default async function ProfileChannelPage() {
   const session = await auth();
@@ -11,6 +13,11 @@ export default async function ProfileChannelPage() {
 
   const channel = await getChannelById(session.user.channelId);
   if (!channel) notFound();
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { countryCode: true },
+  });
 
   return (
     <div>
@@ -24,6 +31,7 @@ export default async function ProfileChannelPage() {
           bannerUrl: channel.bannerUrl,
         }}
       />
+      <UserCountryForm initialCountryCode={user?.countryCode ?? null} />
     </div>
   );
 }

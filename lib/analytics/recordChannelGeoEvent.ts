@@ -1,14 +1,15 @@
 import { ChannelGeoMetric } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { countryFromRequest } from "@/lib/geo/countryFromRequest";
+import { countryForGeoEvent } from "@/lib/geo/countryForGeoEvent";
 import { isMissingChannelGeoEventTableError } from "@/lib/prisma-errors";
 
 export async function recordChannelGeoEvent(
   request: Request,
   channelId: string,
-  metric: ChannelGeoMetric
+  metric: ChannelGeoMetric,
+  userId?: string | null
 ): Promise<void> {
-  const countryCode = countryFromRequest(request);
+  const countryCode = await countryForGeoEvent(request, userId);
   if (countryCode === "XX") return;
 
   try {

@@ -32,7 +32,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   if (body.incrementViews) {
     try {
       const video = await incrementVideoViews(id);
-      void recordChannelGeoEvent(request, video.channelId, ChannelGeoMetric.VIEW);
+      void recordChannelGeoEvent(
+        request,
+        video.channelId,
+        ChannelGeoMetric.VIEW,
+        session?.user?.id
+      );
       return NextResponse.json({ views: video.views });
     } catch {
       return NextResponse.json({ error: "Not found" }, { status: 404 });

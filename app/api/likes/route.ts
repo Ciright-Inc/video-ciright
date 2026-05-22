@@ -61,7 +61,12 @@ export async function POST(request: Request) {
 
       const geoMetric =
         value === 1 ? ChannelGeoMetric.LIKE : ChannelGeoMetric.DISLIKE;
-      void recordChannelGeoEvent(request, video.channelId, geoMetric);
+      void recordChannelGeoEvent(
+        request,
+        video.channelId,
+        geoMetric,
+        userId
+      );
     }
 
     const stats = await getVideoLikeStats(videoId);

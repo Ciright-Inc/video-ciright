@@ -38,7 +38,12 @@ export async function POST(request: Request) {
       data: { subscriberId, channelId },
     });
 
-    void recordChannelGeoEvent(request, channelId, ChannelGeoMetric.SUBSCRIBE);
+    void recordChannelGeoEvent(
+      request,
+      channelId,
+      ChannelGeoMetric.SUBSCRIBE,
+      subscriberId
+    );
 
     return NextResponse.json({ subscribed: true });
   } catch {

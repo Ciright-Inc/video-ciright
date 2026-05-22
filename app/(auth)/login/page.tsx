@@ -1,10 +1,6 @@
 import { AuthFormPanel } from "@/components/auth/AuthFormPanel";
 import LoginForm from "./LoginForm";
 
-const googleAuthEnabled = Boolean(
-  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
-);
-
 type LoginPageProps = {
   searchParams: Promise<{ callbackUrl?: string | string[] }>;
 };
@@ -31,10 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </>
       }
     >
-      <LoginForm
-        callbackUrl={callbackUrl}
-        googleAuthEnabled={googleAuthEnabled}
-      />
+      <LoginForm callbackUrl={callbackUrl} />
     </AuthFormPanel>
   );
 }

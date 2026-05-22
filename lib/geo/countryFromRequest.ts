@@ -5,6 +5,7 @@ const COUNTRY_HEADERS = [
   "cf-ipcountry",
   "x-vercel-ip-country",
   "x-country-code",
+  "x-geo-country",
 ] as const;
 
 function normalizeCountryHeader(raw: string): string | null {

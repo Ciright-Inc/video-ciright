@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { slugifyHandle } from "@/lib/format";
@@ -11,15 +10,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
   providers: [
-    ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
-      ? [
-          Google({
-            clientId: process.env.AUTH_GOOGLE_ID,
-            clientSecret: process.env.AUTH_GOOGLE_SECRET,
-            allowDangerousEmailAccountLinking: true,
-          }),
-        ]
-      : []),
     Credentials({
       name: "credentials",
       credentials: {
@@ -125,33 +115,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.expiresAt = token.exp * 1000;
       }
       return session;
-    },
-    async signIn({ user, account }) {
-      if (account?.provider === "google" && user.email) {
-        const existing = await prisma.user.findUnique({
-          where: { email: user.email },
-          include: { channel: true },
-        });
-
-        if (existing && !existing.channel) {
-          const base = slugifyHandle(user.name ?? user.email.split("@")[0]);
-          let handle = base;
-          let i = 0;
-          while (await prisma.channel.findUnique({ where: { handle } })) {
-            i++;
-            handle = `${base}${i}`;
-          }
-          await prisma.channel.create({
-            data: {
-              handle,
-              name: user.name ?? base,
-              avatarUrl: user.image,
-              ownerId: existing.id,
-            },
-          });
-        }
-      }
-      return true;
     },
   },
   events: {

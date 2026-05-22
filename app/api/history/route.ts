@@ -79,7 +79,12 @@ export async function POST(request: Request) {
 
   await recordWatchHistory(session.user.id, videoId);
 
-  void recordChannelGeoEvent(request, video.channelId, ChannelGeoMetric.WATCH);
+  void recordChannelGeoEvent(
+    request,
+    video.channelId,
+    ChannelGeoMetric.WATCH,
+    session.user.id
+  );
 
   return NextResponse.json({ ok: true });
 }

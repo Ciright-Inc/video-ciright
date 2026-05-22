@@ -37,23 +37,19 @@ function bestIpFromHeader(raw: string): string | null {
   return ips.find((ip) => !isPrivateOrLoopbackIp(ip)) ?? ips[0];
 }
 
+const IP_HEADERS = [
+  "cf-connecting-ip",
+  "x-vercel-forwarded-for",
+  "x-forwarded-for",
+  "x-real-ip",
+] as const;
+
 /** Client IP from common proxy / CDN headers. */
 export function clientIpFromRequest(request: Request): string | null {
-  const singleValueHeaders = [
-    request.headers.get("cf-connecting-ip"),
-    request.headers.get("x-vercel-forwarded-for"),
-    request.headers.get("x-real-ip"),
-  ];
-
-  for (const raw of singleValueHeaders) {
+  for (const name of IP_HEADERS) {
+    const raw = request.headers.get(name);
     if (!raw) continue;
-    const ip = bestIpFromHeader(raw) ?? parseIp(raw);
-    if (ip) return ip;
-  }
-
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const ip = bestIpFromHeader(forwarded);
+    const ip = bestIpFromHeader(raw);
     if (ip) return ip;
   }
 
