@@ -7,6 +7,7 @@ import {
   MessageCircle,
   ThumbsDown,
   ThumbsUp,
+  UserPlus,
   Video,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const iconByType: Record<NotificationType, LucideIcon> = {
   COMMENT_DISLIKE: ThumbsDown,
   COMMENT_REPLY: MessageCircle,
   SUBSCRIPTION_NEW_VIDEO: Video,
+  CHANNEL_NEW_SUBSCRIBER: UserPlus,
 };
 
 const iconBadgeClassByType: Partial<Record<NotificationType, string>> = {
@@ -33,6 +35,7 @@ const iconBadgeClassByType: Partial<Record<NotificationType, string>> = {
   COMMENT_DISLIKE: "bg-destructive text-white",
   COMMENT_REPLY: "bg-primary text-primary-foreground",
   SUBSCRIPTION_NEW_VIDEO: "bg-primary text-primary-foreground",
+  CHANNEL_NEW_SUBSCRIBER: "bg-primary text-primary-foreground",
 };
 
 const rowSpring = {

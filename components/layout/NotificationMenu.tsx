@@ -169,7 +169,7 @@ export function NotificationMenu() {
       });
       if (!res.ok) return;
       setUnreadCount(0);
-      setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+      setItems([]);
     } catch {
       /* ignore */
     }
@@ -178,9 +178,7 @@ export function NotificationMenu() {
   async function markItemRead(id: string) {
     const item = items.find((n) => n.id === id);
     if (!item || item.read) return;
-    setItems((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setItems((prev) => prev.filter((n) => n.id !== id));
     setUnreadCount((c) => Math.max(0, c - 1));
     try {
       await fetch("/api/notifications", {
@@ -189,9 +187,7 @@ export function NotificationMenu() {
         body: JSON.stringify({ ids: [id] }),
       });
     } catch {
-      setItems((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: false } : n))
-      );
+      if (item) setItems((prev) => [...prev, item]);
       void fetchUnreadCount();
     }
   }

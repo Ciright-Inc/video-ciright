@@ -217,6 +217,7 @@ enum NotificationType {
   COMMENT_DISLIKE
   COMMENT_REPLY
   SUBSCRIPTION_NEW_VIDEO
+  CHANNEL_NEW_SUBSCRIBER
 }
 
 model Notification {

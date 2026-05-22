@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { SearchEmptyState } from "@/components/search/SearchEmptyState";
 import { VideoCard } from "./VideoCard";
 import { VideoGridEmpty, type VideoGridEmptyProps } from "./VideoGridEmpty";
 import { VirtualGrid } from "@/components/virtual/VirtualGrid";
@@ -24,12 +25,15 @@ export function VirtualVideoGrid({
   description,
   action,
 }: VirtualVideoGridProps) {
+  const searchInactive =
+    feed.type === "search" && feed.query.trim().length === 0;
+
   const {
     data,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isPending,
+    isLoading,
   } = useVideoFeedInfinite(feed, initialPage);
 
   const items = flattenVideoFeedPages(data?.pages);
@@ -40,7 +44,16 @@ export function VirtualVideoGrid({
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  if (!isPending && items.length === 0) {
+  if (searchInactive) {
+    return null;
+  }
+
+  if (!isLoading && items.length === 0) {
+    if (feed.type === "search") {
+      return (
+        <SearchEmptyState variant="no-results" query={feed.query.trim()} />
+      );
+    }
     return (
       <VideoGridEmpty
         title={title}
@@ -50,7 +63,7 @@ export function VirtualVideoGrid({
     );
   }
 
-  if (isPending && items.length === 0) {
+  if (isLoading && items.length === 0) {
     return (
       <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (

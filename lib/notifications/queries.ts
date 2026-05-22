@@ -38,6 +38,9 @@ export async function markNotificationsRead(
         where: { recipientId: userId, readAt: null },
         data: { readAt: now },
       });
+      await prisma.notification.deleteMany({
+        where: { recipientId: userId, readAt: { not: null } },
+      });
       return;
     }
 
@@ -62,9 +65,10 @@ export async function markNotificationsRead(
 
 export async function getNotificationsForUser(
   userId: string,
-  options?: { limit?: number; cursor?: string }
+  options?: { limit?: number; cursor?: string; unreadOnly?: boolean }
 ) {
   const limit = options?.limit ?? 20;
+  const unreadOnly = options?.unreadOnly !== false;
 
   let rows: Awaited<
     ReturnType<typeof prisma.notification.findMany<{
@@ -74,7 +78,10 @@ export async function getNotificationsForUser(
 
   try {
     rows = await prisma.notification.findMany({
-    where: { recipientId: userId },
+    where: {
+      recipientId: userId,
+      ...(unreadOnly ? { readAt: null } : {}),
+    },
     include: notificationInclude,
     orderBy: { updatedAt: "desc" },
     take: limit + 1,
@@ -101,7 +108,12 @@ export async function getNotificationsForUser(
     items: items.map((n) => {
       const watchVideoId =
         n.targetVideoId ?? n.videoId ?? n.comment?.videoId ?? n.video?.id;
-      const href = watchVideoId ? `/watch/${watchVideoId}` : "/";
+      const href =
+        n.type === "CHANNEL_NEW_SUBSCRIBER" && n.channelId
+          ? `/channel/${n.channelId}`
+          : watchVideoId
+            ? `/watch/${watchVideoId}`
+            : "/";
       const thumbnailUrl =
         n.video?.thumbnailUrl ?? n.channel?.avatarUrl ?? null;
 

@@ -80,6 +80,15 @@ export function formatNotificationMessage({
       }
       return `${channel} uploaded a new video`;
     }
+    case "CHANNEL_NEW_SUBSCRIBER": {
+      if (actorCount > 1) {
+        return `${actorCount.toLocaleString()} new subscribers`;
+      }
+      if (name) {
+        return `${name} subscribed to your channel`;
+      }
+      return "Someone subscribed to your channel";
+    }
     default:
       return "New notification";
   }

@@ -14,10 +14,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const limit = Number(searchParams.get("limit") ?? 20);
   const cursor = searchParams.get("cursor") ?? undefined;
+  const unreadOnly = searchParams.get("unreadOnly") !== "false";
 
   const result = await getNotificationsForUser(session.user.id, {
     limit: Number.isFinite(limit) ? limit : 20,
     cursor,
+    unreadOnly,
   });
 
   return NextResponse.json(result);

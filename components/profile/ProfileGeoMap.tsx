@@ -5,13 +5,9 @@ import {
   ComposableMap,
   Geographies,
   Geography,
-  Marker,
-  getGeographyCentroid,
-  type Coordinates,
 } from "@vnedyalk0v/react19-simple-maps";
 import type { Topology } from "topojson-specification";
-import { feature } from "topojson-client";
-import type { FeatureCollection, Geometry } from "geojson";
+import type { Feature, Geometry } from "geojson";
 import {
   Select,
   SelectContent,
@@ -33,7 +29,12 @@ const METRIC_OPTIONS: { value: GeoMetricKey; label: string }[] = [
   { value: "subscribers", label: "Subscribers" },
 ];
 
-type CountryFeature = GeoJSON.Feature<Geometry, { name?: string }>;
+function geographyNumericId(geo: Feature<Geometry>): string {
+  const raw = geo.id;
+  if (raw == null || raw === "") return "";
+  const s = String(raw);
+  return /^\d+$/.test(s) ? s.padStart(3, "0") : s;
+}
 
 function buildCountByNumericId(
   rows: { countryCode: string; count: number }[]
@@ -47,19 +48,18 @@ function buildCountByNumericId(
   return map;
 }
 
-function fillOpacity(count: number, max: number): number {
-  if (max <= 0 || count <= 0) return 0.06;
-  return 0.1 + (count / max) * 0.75;
-}
-
-function markerRadius(count: number, max: number): number {
-  if (max <= 0 || count <= 0) return 0;
-  return 3 + (count / max) * 14;
+function countryFill(count: number, max: number): string {
+  if (max <= 0 || count <= 0) return "var(--color-border)";
+  const mix = Math.round((0.35 + (count / max) * 0.65) * 100);
+  return `color-mix(in srgb, var(--color-primary) ${mix}%, var(--color-border))`;
 }
 
 export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
   const [metric, setMetric] = useState<GeoMetricKey>("views");
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<{
+    id: string;
+    name: string | null;
+  } | null>(null);
   const [topology, setTopology] = useState<Topology | null>(null);
 
   const countryNames = useMemo(
@@ -89,39 +89,7 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
       .catch(() => setTopology(null));
   }, []);
 
-  const geoFeatures = useMemo(() => {
-    if (!topology?.objects?.countries) return null;
-    const collection = feature(
-      topology,
-      topology.objects.countries as Topology["objects"][string]
-    ) as FeatureCollection;
-    return collection.features as CountryFeature[];
-  }, [topology]);
-
-  const hotspots = useMemo(() => {
-    if (!geoFeatures) return [];
-    return geoFeatures
-      .map((geo) => {
-        const id = String(geo.id ?? "");
-        const count = countById.get(id) ?? 0;
-        if (count <= 0) return null;
-        const coordinates = getGeographyCentroid(geo);
-        if (!coordinates) return null;
-        return { id, count, coordinates };
-      })
-      .filter(Boolean) as {
-      id: string;
-      count: number;
-      coordinates: Coordinates;
-    }[];
-  }, [geoFeatures, countById]);
-
-  const hoveredCount = hoveredId ? (countById.get(hoveredId) ?? 0) : null;
-  const hoveredName = useMemo(() => {
-    if (!hoveredId || !geoFeatures) return null;
-    const geo = geoFeatures.find((g) => String(g.id) === hoveredId);
-    return geo?.properties?.name ?? null;
-  }, [hoveredId, geoFeatures]);
+  const hoveredCount = hovered ? (countById.get(hovered.id) ?? 0) : null;
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
@@ -129,8 +97,8 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
         <div>
           <h2 className="text-sm font-semibold text-ink">Audience by country</h2>
           <p className="mt-0.5 text-xs text-body">
-            Hotspots show where your channel gets the most activity (from each
-            viewer&apos;s profile country; anonymous viewers estimated from IP).
+            Countries are shaded by activity (profile country; anonymous viewers
+            estimated from IP). Darker = more {metricLabel.toLowerCase()}.
           </p>
         </div>
         <Select
@@ -163,69 +131,74 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
               className="h-auto w-full"
               style={{ width: "100%", height: "auto" }}
             >
-              <Geographies geography={GEO_URL}>
+              <Geographies geography={topology}>
                 {({ geographies }) =>
-                  geographies.map((geo) => {
-                    const id = String(geo.id ?? "");
+                  geographies.map((geo, index) => {
+                    const id = geographyNumericId(geo);
                     const count = countById.get(id) ?? 0;
-                    const isHovered = hoveredId === id;
+                    const isHovered = hovered?.id === id;
+                    const name =
+                      (geo.properties?.name as string | undefined) ?? null;
                     return (
                       <Geography
-                        key={id}
+                        key={`${id}-${index}`}
                         geography={geo}
-                        onMouseEnter={() => setHoveredId(id)}
-                        onMouseLeave={() => setHoveredId(null)}
+                        onMouseEnter={() => setHovered({ id, name })}
+                        onMouseLeave={() => setHovered(null)}
                         style={{
                           default: {
-                            fill: "var(--color-border)",
+                            fill: countryFill(count, maxCount),
                             stroke: "var(--color-canvas)",
-                            strokeWidth: 0.4,
+                            strokeWidth: 0.5,
                             outline: "none",
+                            cursor: id ? "pointer" : "default",
                           },
                           hover: {
-                            fill: "color-mix(in srgb, var(--color-primary) 55%, var(--color-border))",
+                            fill:
+                              count > 0
+                                ? "var(--color-primary)"
+                                : "color-mix(in srgb, var(--color-primary) 30%, var(--color-border))",
                             stroke: "var(--color-primary)",
-                            strokeWidth: 0.6,
+                            strokeWidth: 0.75,
                             outline: "none",
                           },
                           pressed: { outline: "none" },
                         }}
-                        fill={
-                          count > 0
-                            ? `color-mix(in srgb, var(--color-primary) ${Math.round(fillOpacity(count, maxCount) * 100)}%, var(--color-border))`
-                            : undefined
-                        }
                         className={cn(
-                          "transition-[fill] duration-150 motion-reduce:transition-none",
-                          isHovered && count > 0 && "brightness-110"
+                          "transition-[fill,stroke] duration-150 motion-reduce:transition-none",
+                          isHovered && "brightness-110"
                         )}
                       />
                     );
                   })
                 }
               </Geographies>
-              {hotspots.map(({ id, count, coordinates }) => (
-                <Marker key={id} coordinates={coordinates}>
-                  <circle
-                    r={markerRadius(count, maxCount)}
-                    fill="var(--color-primary)"
-                    fillOpacity={0.55}
-                    stroke="var(--color-on-primary)"
-                    strokeWidth={1}
-                    strokeOpacity={0.9}
-                    className="pointer-events-none motion-reduce:transition-none"
-                  />
-                </Marker>
-              ))}
             </ComposableMap>
           )}
 
-          {hoveredName != null && hoveredCount != null && (
+          {totalCount > 0 && (
+            <div
+              className="mt-2 flex items-center gap-2 text-[10px] text-body"
+              aria-hidden
+            >
+              <span>Less</span>
+              <div
+                className="h-2 flex-1 max-w-[140px] rounded-full"
+                style={{
+                  background:
+                    "linear-gradient(to right, var(--color-border), var(--color-primary))",
+                }}
+              />
+              <span>More</span>
+            </div>
+          )}
+
+          {hovered?.name != null && hoveredCount != null && (
             <div
               className="pointer-events-none absolute bottom-2 left-2 rounded-md border border-border bg-surface px-2 py-1 text-xs shadow-sm"
               role="status"
             >
-              <span className="font-medium text-ink">{hoveredName}</span>
+              <span className="font-medium text-ink">{hovered.name}</span>
               <span className="text-body">
                 {" "}
                 · {hoveredCount.toLocaleString()} {metricLabel.toLowerCase()}
