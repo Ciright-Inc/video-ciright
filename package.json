@@ -12,6 +12,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
+    "db:migrate-resolve-watch-history": "prisma migrate resolve --rolled-back 20250521120000_add_watch_history",
     "db:push": "prisma db push",
     "db:migrate-original-url": "psql \"$DATABASE_URL\" -f prisma/migrations/20250520120000_add_video_original_url/migration.sql",
     "db:migrate-watch-history": "psql \"$DATABASE_URL\" -f prisma/migrations/20250521120000_add_watch_history/migration.sql",
