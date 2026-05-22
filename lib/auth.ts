@@ -67,36 +67,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { id: token.id as string },
           include: { channel: true },
         });
-        if (dbUser) {
-          if (!dbUser.channel) {
-            const base = slugifyHandle(
-              dbUser.name ?? dbUser.email.split("@")[0]
-            );
-            let handle = base;
-            let i = 0;
-            while (await prisma.channel.findUnique({ where: { handle } })) {
-              i++;
-              handle = `${base}${i}`;
-            }
-            const channel = await prisma.channel.create({
-              data: {
-                handle,
-                name: dbUser.name ?? base,
-                avatarUrl: dbUser.image,
-                ownerId: dbUser.id,
-              },
-            });
-            token.channelId = channel.id;
-            token.channelHandle = channel.handle;
-            token.picture = channel.avatarUrl ?? dbUser.image ?? undefined;
-            token.name = channel.name ?? dbUser.name ?? undefined;
-          } else {
-            token.channelId = dbUser.channel.id;
-            token.channelHandle = dbUser.channel.handle;
-            token.picture =
-              dbUser.channel.avatarUrl ?? dbUser.image ?? undefined;
-            token.name = dbUser.channel.name ?? dbUser.name ?? undefined;
+        if (!dbUser) {
+          delete token.id;
+          delete token.channelId;
+          delete token.channelHandle;
+        } else if (!dbUser.channel) {
+          const base = slugifyHandle(
+            dbUser.name ?? dbUser.email.split("@")[0]
+          );
+          let handle = base;
+          let i = 0;
+          while (await prisma.channel.findUnique({ where: { handle } })) {
+            i++;
+            handle = `${base}${i}`;
           }
+          const channel = await prisma.channel.create({
+            data: {
+              handle,
+              name: dbUser.name ?? base,
+              avatarUrl: dbUser.image,
+              ownerId: dbUser.id,
+            },
+          });
+          token.channelId = channel.id;
+          token.channelHandle = channel.handle;
+          token.picture = channel.avatarUrl ?? dbUser.image ?? undefined;
+          token.name = channel.name ?? dbUser.name ?? undefined;
+        } else {
+          token.channelId = dbUser.channel.id;
+          token.channelHandle = dbUser.channel.handle;
+          token.picture =
+            dbUser.channel.avatarUrl ?? dbUser.image ?? undefined;
+          token.name = dbUser.channel.name ?? dbUser.name ?? undefined;
         }
       }
 
@@ -104,7 +106,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        if (token.id) {
+          session.user.id = token.id;
+        } else {
+          Reflect.deleteProperty(session.user, "id");
+        }
         session.user.channelId = (token.channelId as string | null) ?? null;
         session.user.channelHandle =
           (token.channelHandle as string | null) ?? null;

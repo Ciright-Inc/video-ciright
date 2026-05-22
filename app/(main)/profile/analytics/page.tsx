@@ -3,6 +3,7 @@ import { eachDayOfInterval, format, subDays } from "date-fns";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ProfileAnalyticsCharts } from "@/components/profile/ProfileAnalyticsCharts";
+import { getChannelGeoByCountry } from "@/lib/analytics/getChannelGeoByCountry";
 
 export default async function ProfileAnalyticsPage() {
   const session = await auth();
@@ -40,14 +41,20 @@ export default async function ProfileAnalyticsPage() {
       views: v.views,
     }));
 
+  const geoByMetric = await getChannelGeoByCountry(channelId);
+
   return (
     <div>
       <h2 className="mb-2 text-lg font-semibold text-ink">Analytics</h2>
       <p className="mb-6 text-sm text-body">
-        Views grouped by video upload date (approximation from total views per
-        video).
+        Views by upload day, top videos, and audience by country (from IP at
+        interaction time).
       </p>
-      <ProfileAnalyticsCharts viewsByDay={viewsByDay} topVideos={topVideos} />
+      <ProfileAnalyticsCharts
+        viewsByDay={viewsByDay}
+        topVideos={topVideos}
+        geoByMetric={geoByMetric}
+      />
     </div>
   );
 }

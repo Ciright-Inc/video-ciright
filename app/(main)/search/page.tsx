@@ -32,7 +32,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </p>
         </>
       )}
-      <VideoGrid videos={videos} />
+      <VideoGrid
+        videos={videos}
+        title={query ? "No results found" : undefined}
+        description={
+          query
+            ? `We couldn't find any videos matching "${query}". Try different keywords.`
+            : undefined
+        }
+        action={query ? null : undefined}
+      />
     </div>
   );
 }

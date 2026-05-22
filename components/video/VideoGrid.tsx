@@ -1,16 +1,24 @@
 import { VideoCard } from "./VideoCard";
+import { VideoGridEmpty, type VideoGridEmptyProps } from "./VideoGridEmpty";
 import type { VideoListItem } from "@/lib/data/videos";
 
-interface VideoGridProps {
+interface VideoGridProps extends VideoGridEmptyProps {
   videos: VideoListItem[];
 }
 
-export function VideoGrid({ videos }: VideoGridProps) {
+export function VideoGrid({
+  videos,
+  title,
+  description,
+  action,
+}: VideoGridProps) {
   if (videos.length === 0) {
     return (
-      <p className="py-16 text-center text-body">
-        No videos found. Try uploading one!
-      </p>
+      <VideoGridEmpty
+        title={title}
+        description={description}
+        action={action}
+      />
     );
   }
 

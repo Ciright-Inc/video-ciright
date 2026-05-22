@@ -94,7 +94,7 @@ function ProfileTabChip({
         "size-11 gap-0 sm:h-8 sm:w-auto sm:gap-1.5 sm:px-3.5",
         "text-sm font-medium",
         active
-          ? "text-on-primary!"
+          ? "text-primary-foreground!"
           : "bg-muted text-body hover:bg-surface-soft hover:text-ink"
       )}
     >
@@ -108,14 +108,14 @@ function ProfileTabChip({
       <Icon
         className={cn(
           "relative z-10 size-4 shrink-0",
-          active && "text-on-primary"
+          active && "text-primary-foreground"
         )}
         aria-hidden
       />
       <span
         className={cn(
           "relative z-10 max-sm:sr-only",
-          active && "font-semibold text-on-primary"
+          active && "font-semibold text-primary-foreground"
         )}
       >
         {tab.label}

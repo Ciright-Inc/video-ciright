@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { videoListSelect } from "@/lib/data/videos";
-import { RelatedVideoCard } from "@/components/video/RelatedVideoCard";
+import { HistoryVideoSections } from "@/components/video/HistoryVideoSections";
 import { ClearHistoryButton } from "@/components/profile/ClearHistoryButton";
 import { groupWatchHistory } from "@/lib/profile/historyGroups";
 import { isMissingWatchHistoryTableError } from "@/lib/prisma-errors";
@@ -64,24 +64,16 @@ export default async function ProfileHistoryPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-8">
-          {grouped.map((section) => (
-            <section key={section.label}>
-              <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-                {section.label}
-              </h3>
-              <div className="flex flex-col gap-4">
-                {section.rows.map((row) => (
-                  <RelatedVideoCard
-                    key={`${row.video.id}-${row.watchedAt.toISOString()}`}
-                    video={row.video}
-                    contextDate={row.watchedAt}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+        <HistoryVideoSections
+          sections={grouped.map((section) => ({
+            label: section.label,
+            items: section.rows.map((row) => ({
+              video: row.video,
+              contextDate: row.watchedAt,
+              key: `${row.video.id}-${row.watchedAt.toISOString()}`,
+            })),
+          }))}
+        />
       )}
     </div>
   );

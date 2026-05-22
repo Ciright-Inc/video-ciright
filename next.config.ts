@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     "fluent-ffmpeg",
     "ffmpeg-static",
     "ffprobe-static",
+    "geoip-lite",
   ],
   experimental: {
     proxyClientMaxBodySize: 1024 * 1024 * 1024,

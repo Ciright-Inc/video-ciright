@@ -79,6 +79,28 @@ model Channel {
   videos        Video[]
   subscribers   Subscription[] @relation("channel")
   notifications Notification[]
+  geoEvents     ChannelGeoEvent[]
+}
+
+enum ChannelGeoMetric {
+  VIEW
+  LIKE
+  DISLIKE
+  WATCH
+  SUBSCRIBE
+}
+
+model ChannelGeoEvent {
+  id          String           @id @default(cuid())
+  channelId   String
+  countryCode String
+  metric      ChannelGeoMetric
+  createdAt   DateTime         @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, metric, countryCode])
+  @@index([channelId, createdAt])
 }
 
 model Video {

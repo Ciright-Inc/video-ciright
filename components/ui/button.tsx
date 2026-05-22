@@ -56,4 +56,8 @@ function Button({
   )
 }
 
+/** Pill link CTA for empty states — outline on soft surfaces; beats global `a` link color */
+export const pillCtaLinkClass =
+  "inline-flex h-10 min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-pill border border-primary/30 bg-surface-card px-5 text-sm font-medium text-ink no-underline shadow-sm transition-colors outline-none select-none hover:border-primary/45 hover:bg-primary/8 hover:text-primary focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
+
 export { Button, buttonVariants }

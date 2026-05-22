@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { ChannelGeoMetric } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVideoById, incrementVideoViews } from "@/lib/data/videos";
+import { recordChannelGeoEvent } from "@/lib/analytics/recordChannelGeoEvent";
 import {
   buildVideoAssetPrefix,
   deleteObject,
@@ -30,6 +32,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   if (body.incrementViews) {
     try {
       const video = await incrementVideoViews(id);
+      void recordChannelGeoEvent(request, video.channelId, ChannelGeoMetric.VIEW);
       return NextResponse.json({ views: video.views });
     } catch {
       return NextResponse.json({ error: "Not found" }, { status: 404 });

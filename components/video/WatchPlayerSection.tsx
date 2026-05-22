@@ -74,7 +74,7 @@ export function WatchPlayerSection({
           </p>
           <p className="max-w-md text-xs text-on-dark-soft">
             {isOwner
-              ? "We're converting your upload to adaptive streaming. This page will refresh automatically when it's ready."
+              ? "We're converting your upload to adaptive streaming. Playback will start here automatically when it's ready."
               : "This video is still being processed. Check back in a few minutes."}
           </p>
         </div>

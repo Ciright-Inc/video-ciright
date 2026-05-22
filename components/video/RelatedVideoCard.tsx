@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
+import { motion, useReducedMotion } from "motion/react";
 import { formatDuration, formatViews } from "@/lib/format";
 import type { VideoListItem } from "@/lib/data/videos";
+import { PREMIUM_SPRING, PREMIUM_SPRING_GENTLE } from "./motion-presets";
 
 interface RelatedVideoCardProps {
   video: VideoListItem;
@@ -11,13 +15,26 @@ interface RelatedVideoCardProps {
 }
 
 export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) {
+  const reducedMotion = useReducedMotion();
+
   return (
-    <article className="group flex gap-2">
+    <motion.article
+      className="group flex gap-2"
+      whileHover={reducedMotion ? undefined : { x: 3 }}
+      transition={PREMIUM_SPRING}
+    >
       <Link
         href={`/watch/${video.id}`}
         className="relative block w-[168px] shrink-0 overflow-hidden rounded-[var(--radius-md)]"
       >
-        <div className="relative aspect-video bg-surface-strong">
+        <motion.div
+          className="relative aspect-video bg-surface-strong"
+          whileHover={
+            reducedMotion
+              ? undefined
+              : { scale: 1.025, transition: PREMIUM_SPRING_GENTLE }
+          }
+        >
           {video.thumbnailUrl && (
             <Image
               src={video.thumbnailUrl}
@@ -33,18 +50,18 @@ export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) 
               {formatDuration(video.duration)}
             </span>
           )}
-        </div>
+        </motion.div>
       </Link>
 
       <div className="relative min-w-0 flex-1 pr-6">
         <Link href={`/watch/${video.id}`}>
-          <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink group-hover:text-primary">
+          <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink transition-colors duration-300 group-hover:text-primary">
             {video.title}
           </h3>
         </Link>
         <Link
           href={`/channel/${video.channel.id}`}
-          className="mt-1 block truncate text-xs text-body hover:text-ink"
+          className="mt-1 block truncate text-xs text-body transition-colors duration-300 hover:text-ink"
         >
           {video.channel.name}
         </Link>
@@ -58,12 +75,12 @@ export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) 
         <button
           type="button"
           aria-label="More actions"
-          className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-surface-soft hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity duration-300 hover:bg-surface-soft hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <MoreIcon />
         </button>
       </div>
-    </article>
+    </motion.article>
   );
 }
 

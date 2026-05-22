@@ -128,6 +128,12 @@ export function ProfileAnalyticsSkeleton() {
       <span className="sr-only">Loading analytics…</span>
       <PageHeaderSkeleton titleWidth="w-32" descriptionWidth="w-full max-w-xl" />
 
+      <ProfileSurfaceCard>
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="mt-2 h-3 w-full max-w-md" />
+        <Skeleton className="mt-4 h-72 w-full rounded-md" />
+      </ProfileSurfaceCard>
+
       <div className="grid gap-8 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, i) => (
           <ProfileSurfaceCard key={i}>

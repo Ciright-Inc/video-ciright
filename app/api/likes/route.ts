@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { NotificationType } from "@prisma/client";
+import { ChannelGeoMetric, NotificationType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVideoLikeStats } from "@/lib/data/likes";
 import { recordNotification } from "@/lib/notifications";
+import { recordChannelGeoEvent } from "@/lib/analytics/recordChannelGeoEvent";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
       where: { id: videoId },
       select: {
         id: true,
+        channelId: true,
         channel: { select: { ownerId: true } },
       },
     });
@@ -56,6 +58,10 @@ export async function POST(request: Request) {
           videoId,
         });
       }
+
+      const geoMetric =
+        value === 1 ? ChannelGeoMetric.LIKE : ChannelGeoMetric.DISLIKE;
+      void recordChannelGeoEvent(request, video.channelId, geoMetric);
     }
 
     const stats = await getVideoLikeStats(videoId);

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { ChannelGeoMetric, Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { videoListSelect } from "@/lib/data/videos";
 import { recordWatchHistory } from "@/lib/profile/recordWatchHistory";
 import { isMissingWatchHistoryTableError } from "@/lib/prisma-errors";
+import { recordChannelGeoEvent } from "@/lib/analytics/recordChannelGeoEvent";
 
 const PAGE_SIZE = 50;
 
@@ -68,12 +69,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "videoId required" }, { status: 400 });
   }
 
-  const video = await prisma.video.findUnique({ where: { id: videoId } });
+  const video = await prisma.video.findUnique({
+    where: { id: videoId },
+    select: { channelId: true },
+  });
   if (!video) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   await recordWatchHistory(session.user.id, videoId);
+
+  void recordChannelGeoEvent(request, video.channelId, ChannelGeoMetric.WATCH);
 
   return NextResponse.json({ ok: true });
 }

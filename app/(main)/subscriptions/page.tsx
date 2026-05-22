@@ -7,6 +7,7 @@ import {
 } from "@/lib/data/channels";
 import { VideoGrid } from "@/components/video/VideoGrid";
 import { ChannelChipsRow } from "@/components/subscriptions/ChannelChipsRow";
+import { pillCtaLinkClass } from "@/components/ui/button";
 import { Bell, Layers } from "lucide-react";
 
 interface SubscriptionsPageProps {
@@ -42,10 +43,7 @@ export default async function SubscriptionsPage({
           Subscribe to channels you love and their latest videos will show up
           here. Start by exploring what&apos;s available.
         </p>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary/90"
-        >
+        <Link href="/" className={pillCtaLinkClass}>
           Browse videos
         </Link>
       </div>

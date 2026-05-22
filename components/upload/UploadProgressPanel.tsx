@@ -1,6 +1,13 @@
 "use client";
 
-import { CheckIcon, UploadIcon } from "lucide-react";
+import {
+  CheckIcon,
+  FileImageIcon,
+  FileVideoIcon,
+  SettingsIcon,
+  UploadIcon,
+} from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   Card,
   CardContent,
@@ -8,7 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 export type UploadStep =
@@ -63,51 +69,216 @@ function stepsForUpload(skipsVideo: boolean, includesTranscode: boolean): StepCo
   return steps;
 }
 
-function stepIndex(steps: StepConfig[], step: UploadStep): number {
-  return steps.findIndex((s) => s.id === step);
-}
-
-function uploadSliceSpan(steps: StepConfig[]): number {
-  const hasVideo = steps.some((s) => s.id === "uploading-video");
-  const hasThumb = steps.some((s) => s.id === "uploading-thumbnail");
-  const slice = 100 / steps.length;
-  if (hasVideo && hasThumb) return slice * 2;
-  if (hasVideo || hasThumb) return slice;
-  return 0;
-}
+const UPLOAD_STEP_IDS: UploadStep[] = [
+  "uploading-video",
+  "uploading-thumbnail",
+];
 
 function overallPercent(
   steps: StepConfig[],
-  step: UploadStep,
   filePercent: number | null,
+  completedSteps: ReadonlySet<UploadStep>,
+  activeSteps: ReadonlySet<UploadStep>,
 ): number {
-  const index = stepIndex(steps, step);
-  if (index < 0) return 0;
-
-  const slice = 100 / steps.length;
-  const base = index * slice;
-  const uploadSpan = uploadSliceSpan(steps);
-  const uploadBase =
-    stepIndex(steps, "uploading-video") >= 0
-      ? stepIndex(steps, "uploading-video") * slice
-      : stepIndex(steps, "uploading-thumbnail") * slice;
-
-  if (
-    filePercent !== null &&
-    uploadSpan > 0 &&
-    (step === "uploading-video" || step === "uploading-thumbnail")
-  ) {
-    return uploadBase + (filePercent / 100) * uploadSpan;
+  if (steps.length > 0 && steps.every((s) => completedSteps.has(s.id))) {
+    return 100;
   }
 
-  return base + slice * 0.35;
+  const slice = 100 / steps.length;
+  let percent = steps
+    .filter((s) => completedSteps.has(s.id))
+    .reduce((sum) => sum + slice, 0);
+
+  const uploadStepsInFlow = steps.filter((s) =>
+    UPLOAD_STEP_IDS.includes(s.id),
+  );
+  const isUploadingFiles = uploadStepsInFlow.some((s) =>
+    activeSteps.has(s.id),
+  );
+
+  if (filePercent !== null && isUploadingFiles) {
+    const uploadSliceTotal = uploadStepsInFlow.length * slice;
+    const uploadDoneSlices =
+      uploadStepsInFlow.filter((s) => completedSteps.has(s.id)).length * slice;
+    const remainingUploadSlice = uploadSliceTotal - uploadDoneSlices;
+    percent += (filePercent / 100) * remainingUploadSlice;
+  } else {
+    for (const s of steps) {
+      if (
+        activeSteps.has(s.id) &&
+        !completedSteps.has(s.id) &&
+        !UPLOAD_STEP_IDS.includes(s.id)
+      ) {
+        percent += slice * 0.5;
+      }
+    }
+  }
+
+  return Math.min(100, percent);
 }
 
-function progressTitle(step: UploadStep, current?: StepConfig): string {
+function progressTitle(
+  step: UploadStep,
+  activeSteps: ReadonlySet<UploadStep>,
+  current?: StepConfig,
+): string {
   if (step === "transcoding") return "Processing your video";
+  if (
+    activeSteps.has("uploading-video") &&
+    activeSteps.has("uploading-thumbnail")
+  ) {
+    return "Uploading video and thumbnail";
+  }
   if (current?.label === "Prepare") return "Preparing upload";
   if (current?.label === "Publish") return "Publishing";
-  return `Uploading ${current?.label.toLowerCase()}`;
+  if (current?.label === "Video") return "Uploading video";
+  if (current?.label === "Thumbnail") return "Uploading thumbnail";
+  return `Uploading ${current?.label.toLowerCase() ?? "files"}`;
+}
+
+const HEADER_ICON_SPIN_STYLE = { animationDuration: "1.35s" } as const;
+const PROGRESS_TRANSITION = {
+  duration: 0.45,
+  ease: [0.23, 1, 0.32, 1],
+} as const;
+
+function HeaderIcon({ step }: { step: UploadStep }) {
+  let Icon = UploadIcon;
+  if (step === "uploading-video") Icon = FileVideoIcon;
+  else if (step === "uploading-thumbnail") Icon = FileImageIcon;
+  else if (step === "saving" || step === "transcoding") Icon = SettingsIcon;
+
+  return (
+    <span
+      className="relative flex size-12 shrink-0 items-center justify-center"
+      aria-hidden
+    >
+      <svg
+        className="absolute inset-0 size-full text-primary/20"
+        viewBox="0 0 48 48"
+        fill="none"
+      >
+        <circle
+          cx="24"
+          cy="24"
+          r="20"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        />
+      </svg>
+
+      <svg
+        className="absolute inset-0 size-full -rotate-90 text-primary motion-safe:animate-spin"
+        viewBox="0 0 48 48"
+        fill="none"
+        style={HEADER_ICON_SPIN_STYLE}
+      >
+        <circle
+          cx="24"
+          cy="24"
+          r="20"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray="34 92"
+          className="motion-reduce:opacity-70"
+        />
+      </svg>
+
+      <span className="relative flex size-9 items-center justify-center rounded-xl bg-linear-to-br from-primary/25 via-primary/12 to-primary/5 ring-1 ring-inset ring-primary/20">
+        <Icon className="size-[22px] text-primary" strokeWidth={2} />
+      </span>
+    </span>
+  );
+}
+
+function StepSpinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn(
+        "size-3.5 shrink-0 motion-safe:animate-spin motion-reduce:animate-none",
+        className,
+      )}
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+    >
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="opacity-25"
+      />
+      <path
+        d="M8 2a6 6 0 0 1 6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function StepStatusIcon({ done, active }: { done: boolean; active: boolean }) {
+  if (done) {
+    return (
+      <motion.span
+        key="done"
+        initial={{ opacity: 0, scale: 0.72 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.72 }}
+        transition={{ type: "spring", stiffness: 500, damping: 24 }}
+      >
+        <CheckIcon className="size-3.5" strokeWidth={2.5} />
+      </motion.span>
+    );
+  }
+
+  if (active) {
+    return (
+      <motion.span
+        key="active"
+        className="flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+      >
+        <StepSpinner className="text-primary-foreground" />
+      </motion.span>
+    );
+  }
+
+  return (
+    <motion.span
+      key="pending"
+      className="size-2 rounded-full bg-current opacity-55"
+      initial={{ opacity: 0, scale: 0.7 }}
+      animate={{ opacity: 0.55, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.7 }}
+      transition={{ duration: 0.16, ease: "easeOut" }}
+    />
+  );
+}
+
+function AnimatedStepStatus({
+  done,
+  active,
+}: {
+  done: boolean;
+  active: boolean;
+}) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <StepStatusIcon
+        key={done ? "done" : active ? "active" : "pending"}
+        done={done}
+        active={active}
+      />
+    </AnimatePresence>
+  );
 }
 
 type UploadProgressPanelProps = {
@@ -118,6 +289,8 @@ type UploadProgressPanelProps = {
   videoFileName?: string | null;
   /** Finished steps (e.g. thumbnail done while video still uploading in parallel) */
   completedSteps?: UploadStep[];
+  /** Steps currently in progress (supports parallel video + thumbnail upload) */
+  activeSteps?: UploadStep[];
 };
 
 export function UploadProgressPanel({
@@ -127,19 +300,29 @@ export function UploadProgressPanel({
   filePercent,
   videoFileName,
   completedSteps = [],
+  activeSteps,
 }: UploadProgressPanelProps) {
+  const reduced = useReducedMotion();
   const steps = stepsForUpload(skipsVideoUpload, includesTranscode);
   const current = steps.find((s) => s.id === step);
-  const activeIndex = stepIndex(steps, step);
   const completedSet = new Set(completedSteps);
+  const activeSet = new Set(
+    activeSteps?.length ? activeSteps : step ? [step] : [],
+  );
+  const isUploadingFiles = UPLOAD_STEP_IDS.some((id) => activeSet.has(id));
+  const showFilePercent = filePercent !== null && isUploadingFiles;
+  // Never show 100% while file steps are still active (bytes sent ≠ step done)
+  const effectiveFilePercent =
+    filePercent !== null && isUploadingFiles
+      ? Math.min(filePercent, 99)
+      : filePercent;
+  const displayFilePercent = showFilePercent ? effectiveFilePercent : null;
   const percent = Math.min(
     100,
-    Math.round(overallPercent(steps, step, filePercent)),
+    Math.round(
+      overallPercent(steps, effectiveFilePercent, completedSet, activeSet),
+    ),
   );
-
-  const showFilePercent =
-    filePercent !== null &&
-    (step === "uploading-video" || step === "uploading-thumbnail");
 
   return (
     <Card
@@ -152,24 +335,22 @@ export function UploadProgressPanel({
       <CardHeader className="border-b border-border/80 pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-1 items-start gap-4">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              {step === "saving" ? <Spinner /> : <UploadIcon />}
-            </div>
+            <HeaderIcon step={step} />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <CardTitle
                 id="upload-progress-title"
                 className="text-lg font-semibold tracking-tight"
               >
-                {progressTitle(step, current)}
+                {progressTitle(step, activeSet, current)}
               </CardTitle>
               <CardDescription
                 id="upload-progress-desc"
                 className="text-sm leading-relaxed"
               >
                 {step === "transcoding"
-                  ? "We're converting your upload to adaptive streaming. This page will refresh automatically when it's ready."
+                  ? "We're converting your upload to adaptive streaming. You'll be redirected when it's ready."
                   : current?.description}
-                {step === "uploading-video" && videoFileName ? (
+                {activeSet.has("uploading-video") && videoFileName ? (
                   <span className="mt-1 block truncate font-medium text-foreground">
                     {videoFileName}
                   </span>
@@ -182,9 +363,9 @@ export function UploadProgressPanel({
             <span className="text-2xl font-semibold tabular-nums tracking-tight text-primary">
               {percent}%
             </span>
-            {showFilePercent ? (
+            {displayFilePercent !== null ? (
               <span className="text-xs font-medium text-muted-foreground">
-                File transfer {filePercent}%
+                File transfer {displayFilePercent}%
               </span>
             ) : (
               <span className="text-xs text-muted-foreground">Overall</span>
@@ -192,62 +373,60 @@ export function UploadProgressPanel({
           </div>
         </div>
         <div
-          className="h-1 w-full bg-muted mt-2 rounded-full"
+          className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted"
           role="progressbar"
           aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Overall upload progress"
         >
-          <div
-            className="h-full bg-primary transition-[width] duration-500 ease-out motion-reduce:transition-none rounded-full"
-            style={{ width: `${percent}%` }}
+          <motion.div
+            className="h-full origin-left rounded-full bg-primary"
+            initial={false}
+            animate={{ scaleX: percent / 100 }}
+            transition={reduced ? { duration: 0 } : PROGRESS_TRANSITION}
           />
         </div>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4 pt-4">
         <ol
-          className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1"
+          className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1.5"
           aria-label="Upload steps"
         >
-          {steps.map((s, i) => {
-            const done = completedSet.has(s.id) || i < activeIndex;
-            const active = s.id === step && !done;
+          {steps.map((s) => {
+            const done = completedSet.has(s.id);
+            const active = activeSet.has(s.id) && !done;
 
             return (
               <li
                 key={s.id}
+                aria-current={active ? "step" : undefined}
                 className={cn(
-                  "flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors duration-200 motion-reduce:transition-none sm:min-h-0 sm:border-transparent sm:bg-transparent sm:px-2 sm:py-1",
+                  "flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors duration-200 motion-reduce:transition-none sm:min-h-0 sm:px-2.5 sm:py-1.5",
                   active &&
-                    "border-primary/25 bg-primary/5 sm:border-transparent",
+                    "border-primary/35 bg-primary/10 text-foreground shadow-sm shadow-primary/10",
                   done &&
-                    "border-transparent bg-muted/40 text-muted-foreground",
+                    "border-primary/15 bg-primary/5 text-foreground",
                   !done &&
                     !active &&
-                    "border-border/60 bg-muted/20 text-muted-foreground",
+                    "border-border/70 bg-muted/20 text-muted-foreground",
                 )}
               >
                 <span
                   className={cn(
-                    "flex size-6 shrink-0 items-center justify-center rounded-full border",
-                    done && "border-primary/30 bg-primary/10 text-primary",
-                    active &&
+                    "relative flex size-6 shrink-0 items-center justify-center rounded-full border",
+                    done &&
                       "border-primary bg-primary text-primary-foreground",
+                    active &&
+                      "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/40",
                     !done &&
                       !active &&
                       "border-border bg-background text-muted-foreground",
                   )}
                   aria-hidden
                 >
-                  {done ? (
-                    <CheckIcon className="size-3.5" strokeWidth={2.5} />
-                  ) : active ? (
-                    <Spinner className="text-primary-foreground" />
-                  ) : (
-                    <span className="size-1.5 rounded-full bg-current opacity-40" />
-                  )}
+                  <AnimatedStepStatus done={done} active={active} />
                 </span>
                 <span
                   className={cn(

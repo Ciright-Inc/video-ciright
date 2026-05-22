@@ -23,6 +23,10 @@ function isMissingTableError(error: unknown, tableName: string): boolean {
   return error.message.toLowerCase().includes(needle);
 }
 
+export function isForeignKeyConstraintError(error: unknown): boolean {
+  return isKnownPrismaError(error) && error.code === "P2003";
+}
+
 export function isMissingWatchHistoryTableError(error: unknown): boolean {
   return isMissingTableError(error, "watchhistory");
 }
@@ -37,6 +41,10 @@ export function isMissingNotificationSchemaError(error: unknown): boolean {
     isMissingTableError(error, "notificationactor") ||
     isMissingTableError(error, "commentlike")
   );
+}
+
+export function isMissingChannelGeoEventTableError(error: unknown): boolean {
+  return isMissingTableError(error, "channelgeoevent");
 }
 
 const NOTIFICATIONS_SETUP_HINT =

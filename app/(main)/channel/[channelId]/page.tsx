@@ -48,7 +48,12 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
       )}
       <div className="mt-8">
         <h2 className="mb-4 text-lg font-semibold text-ink">Videos</h2>
-        <VideoGrid videos={videos} />
+        <VideoGrid
+          videos={videos}
+          title="No videos yet"
+          description="This channel hasn't posted any videos."
+          action={isOwner ? { label: "Upload video", href: "/upload" } : null}
+        />
       </div>
     </div>
   );

@@ -7,8 +7,20 @@ import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  VISIBILITY_OPTIONS,
+  VisibilitySelect,
+} from "@/components/upload/VisibilitySelect";
 import { formatViews } from "@/lib/format";
 import type { Video, Visibility, VideoStatus } from "@prisma/client";
+
+function visibilityLabel(value: Visibility) {
+  return (
+    VISIBILITY_OPTIONS.find((opt) => opt.value === value)?.label ?? value
+  );
+}
 
 type StudioVideo = Pick<
   Video,
@@ -120,7 +132,11 @@ export function StudioTable({ videos: initialVideos }: StudioTableProps) {
                     </Link>
                   </div>
                 </td>
-                <td className="p-3 text-body">{video.visibility}</td>
+                <td className="p-3">
+                  <Badge variant="outline" className="font-normal">
+                    {visibilityLabel(video.visibility)}
+                  </Badge>
+                </td>
                 <td className="p-3">
                   <Badge
                     variant={
@@ -167,35 +183,60 @@ export function StudioTable({ videos: initialVideos }: StudioTableProps) {
       </div>
 
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dark/50 p-4">
-          <div className="w-full max-w-md rounded-[var(--radius-lg)] border border-hairline bg-surface-card p-6 shadow-[var(--shadow-card)]">
-            <h2 className="mb-4 text-lg font-semibold text-ink">Edit video</h2>
-            <div className="flex flex-col gap-4">
-              <input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="h-10 rounded-[var(--radius-md)] border border-hairline px-3 text-sm"
-              />
-              <select
-                value={editVisibility}
-                onChange={(e) =>
-                  setEditVisibility(e.target.value as Visibility)
-                }
-                className="h-10 rounded-[var(--radius-md)] border border-hairline px-3 text-sm"
-              >
-                <option value="PUBLIC">Public</option>
-                <option value="UNLISTED">Unlisted</option>
-                <option value="PRIVATE">Private</option>
-              </select>
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setEditing(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dark/50 p-4"
+          role="presentation"
+          onClick={() => !loading && setEditing(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="studio-edit-title"
+            className="w-full max-w-md rounded-[var(--radius-lg)] border border-hairline bg-surface-card p-6 shadow-[var(--shadow-card)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="studio-edit-title"
+              className="mb-4 text-lg font-semibold text-ink"
+            >
+              Edit video
+            </h2>
+            <FieldGroup className="gap-4">
+              <Field>
+                <FieldLabel htmlFor="studio-edit-video-title">Title</FieldLabel>
+                <Input
+                  id="studio-edit-video-title"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  disabled={loading}
+                  className="h-10"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="studio-edit-visibility">
+                  Who can watch
+                </FieldLabel>
+                <VisibilitySelect
+                  id="studio-edit-visibility"
+                  value={editVisibility}
+                  onValueChange={(v) => setEditVisibility(v as Visibility)}
+                  disabled={loading}
+                />
+              </Field>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setEditing(null)}
+                  disabled={loading}
+                >
                   Cancel
                 </Button>
-                <Button onClick={saveEdit} disabled={loading}>
-                  Save
+                <Button type="button" onClick={saveEdit} disabled={loading}>
+                  {loading ? "Saving…" : "Save"}
                 </Button>
               </div>
-            </div>
+            </FieldGroup>
           </div>
         </div>
       )}

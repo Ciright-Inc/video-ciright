@@ -1,5 +1,11 @@
-import { PrismaClient, VideoStatus, Visibility } from "@prisma/client";
+import {
+  ChannelGeoMetric,
+  PrismaClient,
+  VideoStatus,
+  Visibility,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { isMissingChannelGeoEventTableError } from "../lib/prisma-errors";
 
 const prisma = new PrismaClient();
 
@@ -83,7 +89,58 @@ const SAMPLE_VIDEOS = [
   },
 ];
 
+const SEED_GEO_COUNTRIES = ["US", "GB", "IN", "BR", "DE", "JP", "CA", "AU"] as const;
+
+const SEED_GEO_COUNTS: Record<ChannelGeoMetric, readonly number[]> = {
+  [ChannelGeoMetric.VIEW]: [120, 85, 72, 48, 40, 35, 22, 18],
+  [ChannelGeoMetric.LIKE]: [28, 20, 18, 12, 10, 9, 6, 5],
+  [ChannelGeoMetric.DISLIKE]: [5, 3, 4, 2, 2, 1, 1, 1],
+  [ChannelGeoMetric.WATCH]: [45, 32, 28, 18, 15, 14, 9, 7],
+  [ChannelGeoMetric.SUBSCRIBE]: [10, 7, 8, 5, 4, 5, 3, 2],
+};
+
+async function clearGeoEventsIfPresent() {
+  try {
+    await prisma.channelGeoEvent.deleteMany();
+  } catch (error) {
+    if (!isMissingChannelGeoEventTableError(error)) {
+      throw error;
+    }
+  }
+}
+
+async function seedGeoEvents(channelId: string) {
+  const geoEvents: {
+    channelId: string;
+    countryCode: string;
+    metric: ChannelGeoMetric;
+  }[] = [];
+
+  for (const metric of Object.values(ChannelGeoMetric)) {
+    const counts = SEED_GEO_COUNTS[metric];
+    SEED_GEO_COUNTRIES.forEach((countryCode, i) => {
+      const n = counts[i] ?? 1;
+      for (let j = 0; j < n; j++) {
+        geoEvents.push({ channelId, countryCode, metric });
+      }
+    });
+  }
+
+  try {
+    await prisma.channelGeoEvent.createMany({ data: geoEvents });
+  } catch (error) {
+    if (isMissingChannelGeoEventTableError(error)) {
+      console.warn(
+        "  Skipped geo analytics seed — run: npm run db:setup-geo-events"
+      );
+      return;
+    }
+    throw error;
+  }
+}
+
 async function main() {
+  await clearGeoEventsIfPresent();
   await prisma.like.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.videoTag.deleteMany();
@@ -224,6 +281,8 @@ async function main() {
   await prisma.like.create({ data: { userId: carol.id, videoId: videos[0].id, value: 1 } });
   await prisma.like.create({ data: { userId: alice.id, videoId: videos[3].id, value: 1 } });
   await prisma.like.create({ data: { userId: bob.id, videoId: videos[3].id, value: -1 } });
+
+  await seedGeoEvents(alice.channel!.id);
 
   console.log("Seed complete:");
   console.log("  Users: alice@example.com, bob@example.com, carol@example.com");

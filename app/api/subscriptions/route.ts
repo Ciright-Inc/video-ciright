@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { ChannelGeoMetric } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordChannelGeoEvent } from "@/lib/analytics/recordChannelGeoEvent";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -35,6 +37,8 @@ export async function POST(request: Request) {
     await prisma.subscription.create({
       data: { subscriberId, channelId },
     });
+
+    void recordChannelGeoEvent(request, channelId, ChannelGeoMetric.SUBSCRIBE);
 
     return NextResponse.json({ subscribed: true });
   } catch {

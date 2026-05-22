@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createId } from "@paralleldrive/cuid2";
-import type { VideoStatus } from "@prisma/client";
 import {
   CirclePlayIcon,
   ImagePlusIcon,
@@ -58,14 +57,6 @@ const ACCEPTED_VIDEO_TYPES = [
 const TITLE_MAX = 100;
 const DESC_MAX = 5000;
 const DRAFT_KEY = "upload-video-draft";
-const VIDEO_READY_POLL_INTERVAL_MS = 5000;
-const VIDEO_READY_TIMEOUT_MS = 30 * 60 * 1000;
-
-type VideoStatusResponse = {
-  status?: VideoStatus;
-  videoUrl?: string;
-  error?: string;
-};
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) {
@@ -77,34 +68,6 @@ function formatFileSize(bytes: number): string {
 function fileExtension(name: string): string {
   const ext = name.split(".").pop();
   return ext ? ext.toUpperCase() : "VIDEO";
-}
-
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitForVideoReady(videoId: string): Promise<void> {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < VIDEO_READY_TIMEOUT_MS) {
-    const res = await fetch(`/api/videos/${videoId}`, { cache: "no-store" });
-    const data = (await res.json().catch(() => ({}))) as VideoStatusResponse;
-
-    if (!res.ok) {
-      throw new Error(data.error ?? "Could not check video processing status");
-    }
-
-    if (data.status === "READY") return;
-    if (data.status === "FAILED") {
-      throw new Error(
-        "Your video could not be converted for streaming. Try uploading again."
-      );
-    }
-
-    await wait(VIDEO_READY_POLL_INTERVAL_MS);
-  }
-
-  throw new Error("Video processing is taking longer than expected.");
 }
 
 export function UploadForm() {
@@ -134,6 +97,7 @@ export function UploadForm() {
   const [completedUploadSteps, setCompletedUploadSteps] = useState<UploadStep[]>(
     []
   );
+  const [activeUploadSteps, setActiveUploadSteps] = useState<UploadStep[]>([]);
   const [fileUploadPercent, setFileUploadPercent] = useState<number | null>(
     null
   );
@@ -330,7 +294,9 @@ export function UploadForm() {
 
       xhr.upload.addEventListener("progress", (event) => {
         if (!event.lengthComputable) return;
-        onProgress(Math.round((event.loaded / event.total) * 100));
+        // Cap at 99 until the server responds — 100% bytes sent ≠ upload finished
+        const pct = Math.round((event.loaded / event.total) * 100);
+        onProgress(Math.min(99, pct));
       });
 
       xhr.addEventListener("load", () => {
@@ -454,26 +420,33 @@ export function UploadForm() {
 
     setLoading(true);
     setUploadStep("preparing");
+    setActiveUploadSteps(["preparing"]);
     setCompletedUploadSteps([]);
     setFileUploadPercent(null);
 
+    let succeeded = false;
     try {
       const videoId = createId();
       let finalVideoUrl = videoUrl;
       let s3Key: string | undefined;
-      let willTranscode = false;
 
       if (!useExternalUrl) {
         setUploadStep("preparing");
+        setActiveUploadSteps(["preparing"]);
         const thumbnailFile = await resolveThumbnailForUpload();
 
         let videoPercent = 0;
         let thumbPercent = 0;
+        let videoUploadDone = false;
+        let thumbnailUploadDone = false;
         const videoBytes = videoFile!.size;
         const thumbBytes = thumbnailFile.size;
         const totalBytes = videoBytes + thumbBytes;
 
         const updateCombinedProgress = () => {
+          if (videoPercent >= 100) videoUploadDone = true;
+          if (thumbPercent >= 100) thumbnailUploadDone = true;
+
           const weighted =
             totalBytes > 0
               ? (videoBytes * videoPercent + thumbBytes * thumbPercent) /
@@ -482,55 +455,75 @@ export function UploadForm() {
           setFileUploadPercent(Math.round(weighted));
 
           const finished: UploadStep[] = ["preparing"];
-          if (videoPercent >= 100) finished.push("uploading-video");
-          if (thumbPercent >= 100) finished.push("uploading-thumbnail");
+          if (videoUploadDone) finished.push("uploading-video");
+          if (thumbnailUploadDone) finished.push("uploading-thumbnail");
           setCompletedUploadSteps(finished);
 
-          if (videoPercent < 100) {
+          const active: UploadStep[] = [];
+          if (!videoUploadDone) active.push("uploading-video");
+          if (!thumbnailUploadDone) active.push("uploading-thumbnail");
+          setActiveUploadSteps(active);
+
+          if (!videoUploadDone) {
             setUploadStep("uploading-video");
-          } else if (thumbPercent < 100) {
+          } else if (!thumbnailUploadDone) {
             setUploadStep("uploading-thumbnail");
           }
         };
 
         setCompletedUploadSteps(["preparing"]);
+        setActiveUploadSteps(["uploading-video", "uploading-thumbnail"]);
         setUploadStep("uploading-video");
         setFileUploadPercent(0);
 
+        const videoUpload = uploadToStorage(
+          videoFile!,
+          "video",
+          videoId,
+          "uploading-video",
+          (p) => {
+            videoPercent = p;
+            updateCombinedProgress();
+          },
+          { syncStep: false }
+        ).then((result) => {
+          videoPercent = 100;
+          videoUploadDone = true;
+          updateCombinedProgress();
+          return result;
+        });
+
+        const thumbnailUpload = uploadToStorage(
+          thumbnailFile,
+          "thumbnail",
+          videoId,
+          "uploading-thumbnail",
+          (p) => {
+            thumbPercent = p;
+            updateCombinedProgress();
+          },
+          { syncStep: false }
+        ).then((result) => {
+          thumbPercent = 100;
+          thumbnailUploadDone = true;
+          updateCombinedProgress();
+          return result;
+        });
+
         const [videoResult, thumbnailResult] = await Promise.all([
-          uploadToStorage(
-            videoFile!,
-            "video",
-            videoId,
-            "uploading-video",
-            (p) => {
-              videoPercent = p;
-              updateCombinedProgress();
-            },
-            { syncStep: false }
-          ),
-          uploadToStorage(
-            thumbnailFile,
-            "thumbnail",
-            videoId,
-            "uploading-thumbnail",
-            (p) => {
-              thumbPercent = p;
-              updateCombinedProgress();
-            },
-            { syncStep: false }
-          ),
+          videoUpload,
+          thumbnailUpload,
         ]);
 
         finalVideoUrl = videoResult.publicUrl;
         s3Key = videoResult.key;
-        willTranscode = true;
 
         setCompletedUploadSteps([
           "preparing",
           "uploading-video",
           "uploading-thumbnail",
         ]);
+        setActiveUploadSteps(["saving"]);
         setUploadStep("saving");
         setFileUploadPercent(null);
 
@@ -554,17 +547,14 @@ export function UploadForm() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Upload failed");
 
-        if (willTranscode && data.status === "PROCESSING") {
-          setCompletedUploadSteps([
-            "preparing",
-            "uploading-video",
-            "uploading-thumbnail",
-            "saving",
-          ]);
-          setUploadStep("transcoding");
-          await waitForVideoReady(data.id);
-        }
+        setCompletedUploadSteps([
+          "preparing",
+          "uploading-video",
+          "uploading-thumbnail",
+          "saving",
+        ]);
 
+        succeeded = true;
         localStorage.removeItem(DRAFT_KEY);
         router.push(`/watch/${data.id}`);
         router.refresh();
@@ -572,20 +562,26 @@ export function UploadForm() {
       }
 
       setUploadStep("preparing");
+      setActiveUploadSteps(["preparing"]);
       setCompletedUploadSteps([]);
       setFileUploadPercent(null);
       const thumbnailFile = await resolveThumbnailForUpload();
+      setCompletedUploadSteps(["preparing"]);
+      setActiveUploadSteps(["uploading-thumbnail"]);
+      setUploadStep("uploading-thumbnail");
       const finalThumbnailUrl = (
         await uploadToStorage(
           thumbnailFile,
           "thumbnail",
           videoId,
           "uploading-thumbnail",
-          setFileUploadPercent
+          setFileUploadPercent,
+          { syncStep: false }
         )
       ).publicUrl;
 
       setCompletedUploadSteps(["preparing", "uploading-thumbnail"]);
+      setActiveUploadSteps(["saving"]);
       setUploadStep("saving");
       setFileUploadPercent(null);
 
@@ -610,6 +606,9 @@ export function UploadForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed");
 
+      setCompletedUploadSteps(["preparing", "uploading-thumbnail", "saving"]);
+
+      succeeded = true;
       localStorage.removeItem(DRAFT_KEY);
       router.push(`/watch/${data.id}`);
       router.refresh();
@@ -618,10 +617,13 @@ export function UploadForm() {
         err instanceof Error ? err.message : "Upload failed"
       );
     } finally {
-      setLoading(false);
-      setUploadStep(null);
-      setCompletedUploadSteps([]);
-      setFileUploadPercent(null);
+      if (!succeeded) {
+        setLoading(false);
+        setUploadStep(null);
+        setActiveUploadSteps([]);
+        setCompletedUploadSteps([]);
+        setFileUploadPercent(null);
+      }
     }
   }
 
@@ -672,10 +674,11 @@ export function UploadForm() {
         <UploadProgressPanel
           step={uploadStep}
           skipsVideoUpload={useExternalUrl}
-          includesTranscode={!useExternalUrl}
+          includesTranscode={false}
           filePercent={fileUploadPercent}
           videoFileName={videoFile?.name}
           completedSteps={completedUploadSteps}
+          activeSteps={activeUploadSteps}
         />
       )}
 
