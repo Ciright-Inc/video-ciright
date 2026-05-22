@@ -17,6 +17,7 @@
     "db:migrate-original-url": "psql \"$DATABASE_URL\" -f prisma/migrations/20250520120000_add_video_original_url/migration.sql",
     "db:migrate-watch-history": "psql \"$DATABASE_URL\" -f prisma/migrations/20250521120000_add_watch_history/migration.sql",
     "db:migrate-notifications": "psql \"$DATABASE_URL\" -f prisma/migrations/20250522120000_add_notifications/migration.sql",
+    "db:setup-notifications": "bash scripts/setup-notifications.sh",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio"
   },

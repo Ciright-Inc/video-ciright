@@ -6,6 +6,7 @@ import {
   getCommentLikeStats,
   getUserCommentLikeValue,
 } from "@/lib/data/comment-likes";
+import { isMissingNotificationSchemaError } from "@/lib/prisma-errors";
 import { recordNotification } from "@/lib/notifications";
 
 export async function POST(request: Request) {
@@ -69,7 +70,16 @@ export async function POST(request: Request) {
       ...stats,
       userValue,
     });
-  } catch {
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      return NextResponse.json(
+        {
+          error:
+            "Comment likes are unavailable until notification tables are migrated. Run: npm run db:setup-notifications",
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to update comment like" },
       { status: 500 }

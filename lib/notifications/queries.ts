@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import {
+  isMissingNotificationSchemaError,
+  warnMissingNotificationSchema,
+} from "@/lib/prisma-errors";
 import { formatNotificationMessage } from "@/lib/notifications/messages";
 
 const notificationInclude = {
@@ -9,9 +13,17 @@ const notificationInclude = {
 } as const;
 
 export async function getUnreadCount(userId: string): Promise<number> {
-  return prisma.notification.count({
-    where: { recipientId: userId, readAt: null },
-  });
+  try {
+    return await prisma.notification.count({
+      where: { recipientId: userId, readAt: null },
+    });
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      warnMissingNotificationSchema();
+      return 0;
+    }
+    throw error;
+  }
 }
 
 export async function markNotificationsRead(
@@ -20,23 +32,31 @@ export async function markNotificationsRead(
 ): Promise<void> {
   const now = new Date();
 
-  if (options.all) {
-    await prisma.notification.updateMany({
-      where: { recipientId: userId, readAt: null },
-      data: { readAt: now },
-    });
-    return;
-  }
+  try {
+    if (options.all) {
+      await prisma.notification.updateMany({
+        where: { recipientId: userId, readAt: null },
+        data: { readAt: now },
+      });
+      return;
+    }
 
-  if (options.ids?.length) {
-    await prisma.notification.updateMany({
-      where: {
-        recipientId: userId,
-        id: { in: options.ids },
-        readAt: null,
-      },
-      data: { readAt: now },
-    });
+    if (options.ids?.length) {
+      await prisma.notification.updateMany({
+        where: {
+          recipientId: userId,
+          id: { in: options.ids },
+          readAt: null,
+        },
+        data: { readAt: now },
+      });
+    }
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      warnMissingNotificationSchema();
+      return;
+    }
+    throw error;
   }
 }
 
@@ -46,7 +66,14 @@ export async function getNotificationsForUser(
 ) {
   const limit = options?.limit ?? 20;
 
-  const rows = await prisma.notification.findMany({
+  let rows: Awaited<
+    ReturnType<typeof prisma.notification.findMany<{
+      include: typeof notificationInclude;
+    }>>
+  >;
+
+  try {
+    rows = await prisma.notification.findMany({
     where: { recipientId: userId },
     include: notificationInclude,
     orderBy: { updatedAt: "desc" },
@@ -57,7 +84,14 @@ export async function getNotificationsForUser(
           skip: 1,
         }
       : {}),
-  });
+    });
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      warnMissingNotificationSchema();
+      return { items: [], nextCursor: undefined };
+    }
+    throw error;
+  }
 
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;

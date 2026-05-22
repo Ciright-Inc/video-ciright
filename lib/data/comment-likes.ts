@@ -1,6 +1,20 @@
 import { prisma } from "@/lib/prisma";
+import { isMissingNotificationSchemaError } from "@/lib/prisma-errors";
+
+const emptyStats = { likeCount: 0, dislikeCount: 0 };
 
 export async function getCommentLikeStats(commentId: string) {
+  try {
+    return await getCommentLikeStatsInner(commentId);
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      return emptyStats;
+    }
+    throw error;
+  }
+}
+
+async function getCommentLikeStatsInner(commentId: string) {
   const likes = await prisma.commentLike.groupBy({
     by: ["value"],
     where: { commentId },
@@ -17,10 +31,17 @@ export async function getUserCommentLikeValue(
   userId: string,
   commentId: string
 ) {
-  const like = await prisma.commentLike.findUnique({
-    where: { userId_commentId: { userId, commentId } },
-  });
-  return like?.value ?? 0;
+  try {
+    const like = await prisma.commentLike.findUnique({
+      where: { userId_commentId: { userId, commentId } },
+    });
+    return like?.value ?? 0;
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      return 0;
+    }
+    throw error;
+  }
 }
 
 export async function getCommentLikeStatsForIds(
@@ -34,6 +55,25 @@ export async function getCommentLikeStatsForIds(
     >();
   }
 
+  try {
+    return await getCommentLikeStatsForIdsInner(commentIds, userId);
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      return new Map(
+        commentIds.map((id) => [
+          id,
+          { likeCount: 0, dislikeCount: 0, userValue: 0 },
+        ])
+      );
+    }
+    throw error;
+  }
+}
+
+async function getCommentLikeStatsForIdsInner(
+  commentIds: string[],
+  userId?: string
+) {
   const grouped = await prisma.commentLike.groupBy({
     by: ["commentId", "value"],
     where: { commentId: { in: commentIds } },

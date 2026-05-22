@@ -1,5 +1,9 @@
 import { NotificationType, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  isMissingNotificationSchemaError,
+  warnMissingNotificationSchema,
+} from "@/lib/prisma-errors";
 
 export type RecordNotificationInput = {
   recipientId: string;
@@ -33,6 +37,22 @@ export async function recordNotification(
   const { recipientId, type, actorId } = input;
 
   if (recipientId === actorId) return;
+
+  try {
+    await recordNotificationInner(input);
+  } catch (error) {
+    if (isMissingNotificationSchemaError(error)) {
+      warnMissingNotificationSchema();
+      return;
+    }
+    throw error;
+  }
+}
+
+async function recordNotificationInner(
+  input: RecordNotificationInput
+): Promise<void> {
+  const { recipientId, type, actorId } = input;
 
   const existing = await prisma.notification.findFirst({
     where: unreadGroupWhere(input),
