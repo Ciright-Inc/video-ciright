@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { Avatar } from "@/components/ui/user-avatar";
 import { CommentInput } from "./CommentInput";
 import { CommentLikeButtons } from "./CommentLikeButtons";
@@ -80,11 +80,10 @@ function CommentRow({
           <span className="font-medium">
             @{displayName.replace(/\s+/g, "").toLowerCase()}
           </span>
-          <span className="ml-2 text-muted-foreground">
-            {formatDistanceToNow(new Date(comment.createdAt), {
-              addSuffix: true,
-            })}
-          </span>
+          <RelativeTime
+            date={comment.createdAt}
+            className="ml-2 text-muted-foreground"
+          />
         </p>
         <p className="mt-1 text-sm text-body">{comment.body}</p>
         <div className="mt-1 flex items-center gap-1">

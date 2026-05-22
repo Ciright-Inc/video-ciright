@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import { searchVideos } from "@/lib/data/videos";
+import { searchVideosPage } from "@/lib/data/videos";
 import { SearchForm } from "@/components/search/SearchForm";
-import { VideoGrid } from "@/components/video/VideoGrid";
+import { VirtualVideoGrid } from "@/components/video/VirtualVideoGrid";
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string; focus?: string }>;
@@ -10,7 +10,8 @@ interface SearchPageProps {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
-  const videos = query ? await searchVideos(query) : [];
+  const initialPage = query ? await searchVideosPage(query) : undefined;
+  const resultCount = initialPage?.items.length ?? 0;
 
   return (
     <div>
@@ -20,7 +21,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       </Suspense>
       {query ? (
         <p className="mb-6 text-sm text-muted-foreground">
-          {videos.length} result{videos.length !== 1 ? "s" : ""} for &quot;{query}&quot;
+          {resultCount} result{resultCount !== 1 ? "s" : ""} for &quot;{query}&quot;
         </p>
       ) : (
         <>
@@ -32,8 +33,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </p>
         </>
       )}
-      <VideoGrid
-        videos={videos}
+      <VirtualVideoGrid
+        feed={{ type: "search", query }}
+        initialPage={initialPage}
         title={query ? "No results found" : undefined}
         description={
           query

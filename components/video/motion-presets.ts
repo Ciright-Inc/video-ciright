@@ -1,6 +1,9 @@
 /** Shared motion tokens for video list / card animations */
 
-/** Soft ease-in-out — avoids the snap-to-opaque “blink” of ease-out-expo */
+/** Premium ease-out expo — crisp settle without a hard snap */
+export const PREMIUM_EASE = [0.23, 1, 0.32, 1] as const;
+
+/** Soft ease-in-out — section headings and secondary fades */
 export const SMOOTH_EASE = [0.25, 0.1, 0.25, 1] as const;
 
 export const PREMIUM_VIEWPORT = {
@@ -10,52 +13,92 @@ export const PREMIUM_VIEWPORT = {
 
 export const PREMIUM_SPRING = {
   type: "spring" as const,
-  stiffness: 220,
-  damping: 30,
-  mass: 1,
+  stiffness: 260,
+  damping: 28,
+  mass: 0.85,
 };
 
 export const PREMIUM_SPRING_GENTLE = {
   type: "spring" as const,
-  stiffness: 180,
+  stiffness: 200,
   damping: 26,
-  mass: 1.1,
+  mass: 1,
 };
 
-/** Entrance: opacity fades slowly; position follows a soft spring */
+/** List row entrance — layered fade, lift, de-blur, and soft scale */
 export const ENTRANCE_TRANSITION = {
-  opacity: { duration: 0.75, ease: SMOOTH_EASE },
-  y: { type: "spring" as const, stiffness: 85, damping: 22, mass: 1.25 },
+  opacity: { duration: 0.55, ease: PREMIUM_EASE },
+  y: { type: "spring" as const, stiffness: 110, damping: 22, mass: 0.95 },
+  scale: { type: "spring" as const, stiffness: 110, damping: 22, mass: 0.95 },
+  filter: { duration: 0.5, ease: PREMIUM_EASE },
 };
 
+/** Container only orchestrates stagger — children carry the visual entrance */
 export const listVariants = {
-  hidden: { opacity: 0 },
+  hidden: {},
   visible: {
-    opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
+      staggerChildren: 0.065,
+      delayChildren: 0.08,
     },
   },
 };
 
 export const listItemVariants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: {
+    opacity: 0,
+    y: 22,
+    scale: 0.97,
+    filter: "blur(10px)",
+  },
   visible: {
     opacity: 1,
     y: 0,
+    scale: 1,
+    filter: "blur(0px)",
     transition: ENTRANCE_TRANSITION,
   },
 };
 
+/** Propagates from motion.li — thumbnail then metadata cascade */
+export const cardContentVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.12,
+    },
+  },
+};
+
+export const cardThumbVariants = {
+  hidden: { opacity: 0, scale: 0.92 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.48, ease: PREMIUM_EASE },
+  },
+};
+
+export const cardTextVariants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.42, ease: PREMIUM_EASE },
+  },
+};
+
 export const sectionHeadingVariants = {
-  hidden: { opacity: 0, y: 6 },
+  hidden: { opacity: 0, y: 10, filter: "blur(4px)" },
   visible: {
     opacity: 1,
     y: 0,
+    filter: "blur(0px)",
     transition: {
-      opacity: { duration: 0.6, ease: SMOOTH_EASE },
-      y: { type: "spring" as const, stiffness: 100, damping: 24, mass: 1 },
+      opacity: { duration: 0.55, ease: SMOOTH_EASE },
+      y: { type: "spring" as const, stiffness: 120, damping: 24, mass: 0.95 },
+      filter: { duration: 0.45, ease: SMOOTH_EASE },
     },
   },
 };

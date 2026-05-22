@@ -129,3 +129,12 @@ DO $$ BEGIN
       FOREIGN KEY ("commentId") REFERENCES "Comment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
   END IF;
 END $$;
+
+-- Legacy deployments connect as role `ciright`; tables are often owned by ciright_video_user.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ciright') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "Notification" TO ciright;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "NotificationActor" TO ciright;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "CommentLike" TO ciright;
+  END IF;
+END $$;

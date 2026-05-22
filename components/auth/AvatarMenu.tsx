@@ -13,6 +13,7 @@ import {
   Video,
   type LucideIcon,
 } from "lucide-react";
+import { headerPopoverPanelClass } from "@/components/layout/header-popover-panel";
 import { Avatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils";
 
@@ -102,7 +103,7 @@ export function AvatarMenu({ session }: { session: Session }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-50 mt-2 w-[300px] overflow-hidden rounded-xl border border-border bg-surface-card font-[Roboto,sans-serif] shadow-[0_4px_32px_rgba(0,0,0,0.12)]"
+          className={cn(headerPopoverPanelClass, "w-[300px]")}
         >
           <div id="sections" className="py-2">
             <section className="px-4 pb-1 pt-1">

@@ -1,13 +1,13 @@
-import { getPublicVideos } from "@/lib/data/videos";
-import { VideoGrid } from "@/components/video/VideoGrid";
+import { getPublicVideosPage } from "@/lib/data/videos";
+import { VirtualVideoGrid } from "@/components/video/VirtualVideoGrid";
 
 export default async function HomePage() {
-  const videos = await getPublicVideos();
+  const initialPage = await getPublicVideosPage();
 
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold text-ink">Recommended</h1>
-      <VideoGrid videos={videos} />
+      <VirtualVideoGrid feed={{ type: "public" }} initialPage={initialPage} />
     </div>
   );
 }

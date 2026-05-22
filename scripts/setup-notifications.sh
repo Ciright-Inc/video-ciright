@@ -25,4 +25,7 @@ set +a
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
   -f prisma/migrations/20250522120000_add_notifications/migration.sql
 
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f scripts/db-grant-notification-tables.sql
+
 echo "Notification tables are ready."

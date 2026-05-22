@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { VideoStatus, Visibility } from "@prisma/client";
-import { videoListSelect } from "./videos";
+import { paginate, type PaginatedResult } from "@/lib/data/pagination";
+import { videoListSelect, type VideoListItem } from "./videos";
+
+const DEFAULT_PAGE_LIMIT = 24;
 
 export async function getChannelById(id: string) {
   return prisma.channel.findUnique({
@@ -13,34 +16,35 @@ export async function getChannelById(id: string) {
 }
 
 export async function getChannelVideos(channelId: string) {
-  return prisma.video.findMany({
+  const page = await getChannelVideosPage(channelId);
+  return page.items;
+}
+
+export async function getChannelVideosPage(
+  channelId: string,
+  options?: { limit?: number; cursor?: string }
+): Promise<PaginatedResult<VideoListItem>> {
+  const { limit = DEFAULT_PAGE_LIMIT, cursor } = options ?? {};
+  const take = limit + 1;
+
+  const rows = await prisma.video.findMany({
     where: {
       channelId,
       status: VideoStatus.READY,
       visibility: { in: [Visibility.PUBLIC, Visibility.UNLISTED] },
     },
-    select: {
-      id: true,
-      title: true,
-      thumbnailUrl: true,
-      videoUrl: true,
-      duration: true,
-      views: true,
-      status: true,
-      visibility: true,
-      isLive: true,
-      createdAt: true,
-      channel: {
-        select: {
-          id: true,
-          handle: true,
-          name: true,
-          avatarUrl: true,
-        },
-      },
-    },
+    select: videoListSelect,
     orderBy: { createdAt: "desc" },
+    take,
+    ...(cursor
+      ? {
+          skip: 1,
+          cursor: { id: cursor },
+        }
+      : {}),
   });
+
+  return paginate(rows, limit);
 }
 
 export async function isSubscribed(subscriberId: string, channelId: string) {
@@ -79,10 +83,19 @@ export async function getSubscriptionFeedVideos(
   userId: string,
   options?: { limit?: number; channelId?: string }
 ) {
-  const { limit = 48, channelId } = options ?? {};
+  const page = await getSubscriptionFeedVideosPage(userId, options);
+  return page.items;
+}
+
+export async function getSubscriptionFeedVideosPage(
+  userId: string,
+  options?: { limit?: number; channelId?: string; cursor?: string }
+): Promise<PaginatedResult<VideoListItem>> {
+  const { limit = DEFAULT_PAGE_LIMIT, channelId, cursor } = options ?? {};
+  const take = limit + 1;
 
   if (channelId) {
-    return prisma.video.findMany({
+    const rows = await prisma.video.findMany({
       where: {
         channelId,
         status: VideoStatus.READY,
@@ -90,8 +103,15 @@ export async function getSubscriptionFeedVideos(
       },
       select: videoListSelect,
       orderBy: { createdAt: "desc" },
-      take: limit,
+      take,
+      ...(cursor
+        ? {
+            skip: 1,
+            cursor: { id: cursor },
+          }
+        : {}),
     });
+    return paginate(rows, limit);
   }
 
   const subscribedChannelIds = await prisma.subscription.findMany({
@@ -99,9 +119,11 @@ export async function getSubscriptionFeedVideos(
     select: { channelId: true },
   });
 
-  if (subscribedChannelIds.length === 0) return [];
+  if (subscribedChannelIds.length === 0) {
+    return { items: [] };
+  }
 
-  return prisma.video.findMany({
+  const rows = await prisma.video.findMany({
     where: {
       channelId: { in: subscribedChannelIds.map((s) => s.channelId) },
       status: VideoStatus.READY,
@@ -109,6 +131,14 @@ export async function getSubscriptionFeedVideos(
     },
     select: videoListSelect,
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take,
+    ...(cursor
+      ? {
+          skip: 1,
+          cursor: { id: cursor },
+        }
+      : {}),
   });
+
+  return paginate(rows, limit);
 }

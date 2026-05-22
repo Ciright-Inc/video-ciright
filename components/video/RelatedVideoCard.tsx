@@ -6,7 +6,13 @@ import { formatDistanceToNow } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
 import { formatDuration, formatViews } from "@/lib/format";
 import type { VideoListItem } from "@/lib/data/videos";
-import { PREMIUM_SPRING, PREMIUM_SPRING_GENTLE } from "./motion-presets";
+import {
+  cardContentVariants,
+  cardTextVariants,
+  cardThumbVariants,
+  PREMIUM_SPRING,
+  PREMIUM_SPRING_GENTLE,
+} from "./motion-presets";
 
 interface RelatedVideoCardProps {
   video: VideoListItem;
@@ -17,23 +23,61 @@ interface RelatedVideoCardProps {
 export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) {
   const reducedMotion = useReducedMotion();
 
+  if (reducedMotion) {
+    return (
+      <article className="group flex gap-2">
+        <CardContent video={video} contextDate={contextDate} />
+      </article>
+    );
+  }
+
   return (
     <motion.article
-      className="group flex gap-2"
-      whileHover={reducedMotion ? undefined : { x: 3 }}
+      className="group flex gap-2 rounded-[var(--radius-md)] transition-[background-color,box-shadow] duration-300 hover:bg-surface-soft/60"
+      variants={cardContentVariants}
+      whileHover={{ x: 4 }}
+      whileTap={{ scale: 0.995 }}
       transition={PREMIUM_SPRING}
     >
+      <CardContent video={video} contextDate={contextDate} animated />
+    </motion.article>
+  );
+}
+
+function CardContent({
+  video,
+  contextDate,
+  animated = false,
+}: {
+  video: VideoListItem;
+  contextDate?: string | Date;
+  animated?: boolean;
+}) {
+  const Thumb = animated ? motion.div : "div";
+  const TextBlock = animated ? motion.div : "div";
+
+  const thumbProps = animated
+    ? { variants: cardThumbVariants }
+    : {};
+  const textProps = animated ? { variants: cardTextVariants } : {};
+
+  return (
+    <>
       <Link
         href={`/watch/${video.id}`}
         className="relative block w-[168px] shrink-0 overflow-hidden rounded-[var(--radius-md)]"
       >
-        <motion.div
+        <Thumb
           className="relative aspect-video bg-surface-strong"
-          whileHover={
-            reducedMotion
-              ? undefined
-              : { scale: 1.025, transition: PREMIUM_SPRING_GENTLE }
-          }
+          {...thumbProps}
+          {...(animated
+            ? {
+                whileHover: {
+                  scale: 1.03,
+                  transition: PREMIUM_SPRING_GENTLE,
+                },
+              }
+            : {})}
         >
           {video.thumbnailUrl && (
             <Image
@@ -50,10 +94,10 @@ export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) 
               {formatDuration(video.duration)}
             </span>
           )}
-        </motion.div>
+        </Thumb>
       </Link>
 
-      <div className="relative min-w-0 flex-1 pr-6">
+      <TextBlock className="relative min-w-0 flex-1 pr-6" {...textProps}>
         <Link href={`/watch/${video.id}`}>
           <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink transition-colors duration-300 group-hover:text-primary">
             {video.title}
@@ -79,8 +123,8 @@ export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) 
         >
           <MoreIcon />
         </button>
-      </div>
-    </motion.article>
+      </TextBlock>
+    </>
   );
 }
 

@@ -14,7 +14,7 @@ interface HistoryVideoSectionsProps {
 }
 
 /** Extra pause between date groups (Today → Yesterday, etc.) */
-const SECTION_CASCADE_DELAY = 0.1;
+const SECTION_CASCADE_DELAY = 0.14;
 
 export function HistoryVideoSections({ sections }: HistoryVideoSectionsProps) {
   const reducedMotion = useReducedMotion();

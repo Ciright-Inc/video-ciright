@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getChannelById, getChannelVideos, isSubscribed } from "@/lib/data/channels";
+import {
+  getChannelById,
+  getChannelVideosPage,
+  isSubscribed,
+} from "@/lib/data/channels";
 import { ChannelBanner } from "@/components/channel/ChannelBanner";
 import { ChannelAvatar } from "@/components/channel/ChannelAvatar";
 import { SubscribeButton } from "@/components/channel/SubscribeButton";
-import { VideoGrid } from "@/components/video/VideoGrid";
+import { VirtualVideoGrid } from "@/components/video/VirtualVideoGrid";
 
 interface ChannelPageProps {
   params: Promise<{ channelId: string }>;
@@ -17,7 +21,7 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
   const channel = await getChannelById(channelId);
   if (!channel) notFound();
 
-  const videos = await getChannelVideos(channelId);
+  const initialPage = await getChannelVideosPage(channelId);
   const subscribed = session?.user?.id
     ? await isSubscribed(session.user.id, channelId)
     : false;
@@ -48,8 +52,9 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
       )}
       <div className="mt-8">
         <h2 className="mb-4 text-lg font-semibold text-ink">Videos</h2>
-        <VideoGrid
-          videos={videos}
+        <VirtualVideoGrid
+          feed={{ type: "channel", channelId }}
+          initialPage={initialPage}
           title="No videos yet"
           description="This channel hasn't posted any videos."
           action={isOwner ? { label: "Upload video", href: "/upload" } : null}

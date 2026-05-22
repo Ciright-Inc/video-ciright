@@ -85,6 +85,7 @@ export function RelatedVideoList({
       {items.map((item) => (
         <motion.li
           key={item.key ?? item.video.id}
+          layout="position"
           variants={listItemVariants}
         >
           <RelatedVideoCard

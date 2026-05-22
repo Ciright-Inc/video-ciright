@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getPublicVideos } from "@/lib/data/videos";
+import { getPublicVideosPage } from "@/lib/data/videos";
 import { isTranscodingEnabled, triggerTranscode } from "@/lib/transcode";
 import { notifyVideoReadyIfPublic } from "@/lib/notifications";
 import { VideoStatus, Visibility } from "@prisma/client";
@@ -15,8 +15,12 @@ export async function GET(request: Request) {
   const cursor = searchParams.get("cursor") ?? undefined;
   const channelId = searchParams.get("channelId") ?? undefined;
 
-  const videos = await getPublicVideos({ limit, cursor, channelId });
-  return NextResponse.json(videos);
+  const page = await getPublicVideosPage({
+    limit: Number.isFinite(limit) ? limit : 24,
+    cursor,
+    channelId,
+  });
+  return NextResponse.json(page);
 }
 
 export async function POST(request: Request) {

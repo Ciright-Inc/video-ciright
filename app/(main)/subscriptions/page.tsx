@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import {
   getSubscribedChannels,
-  getSubscriptionFeedVideos,
+  getSubscriptionFeedVideosPage,
 } from "@/lib/data/channels";
-import { VideoGrid } from "@/components/video/VideoGrid";
+import { VirtualVideoGrid } from "@/components/video/VirtualVideoGrid";
 import { ChannelChipsRow } from "@/components/subscriptions/ChannelChipsRow";
 import { pillCtaLinkClass } from "@/components/ui/button";
 import { Bell, Layers } from "lucide-react";
@@ -23,9 +23,9 @@ export default async function SubscriptionsPage({
   }
 
   const { channel: channelFilter } = await searchParams;
-  const [channels, videos] = await Promise.all([
+  const [channels, initialPage] = await Promise.all([
     getSubscribedChannels(session.user.id),
-    getSubscriptionFeedVideos(session.user.id, {
+    getSubscriptionFeedVideosPage(session.user.id, {
       channelId: channelFilter,
     }),
   ]);
@@ -74,7 +74,7 @@ export default async function SubscriptionsPage({
         </div>
       )}
 
-      {videos.length === 0 ? (
+      {initialPage.items.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-12 text-center">
           <Bell className="mx-auto mb-3 size-8 text-muted-foreground" />
           <p className="text-body">
@@ -96,7 +96,13 @@ export default async function SubscriptionsPage({
               Latest videos
             </h2>
           )}
-          <VideoGrid videos={videos} />
+          <VirtualVideoGrid
+            feed={{
+              type: "subscriptions",
+              channelId: channelFilter,
+            }}
+            initialPage={initialPage}
+          />
         </>
       )}
     </div>

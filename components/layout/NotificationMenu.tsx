@@ -1,22 +1,102 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Bell, CheckCheck } from "lucide-react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+} from "motion/react";
 import { NotificationButton } from "@/components/layout/NotificationButton";
 import {
   NotificationListItem,
+  notificationListVariants,
   type NotificationListItemData,
 } from "@/components/layout/NotificationListItem";
+import { headerPopoverPanelClass } from "@/components/layout/header-popover-panel";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 const POLL_MS = 60_000;
 
+/** Dropdown from bell — weighted spring (popover preset, top-right origin). */
+const panelVariants = {
+  hidden: { opacity: 0, scale: 0.92, y: -14 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 400,
+      damping: 26,
+      mass: 0.82,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: -10,
+    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
+  },
+};
+
+const headerVariants = {
+  hidden: { opacity: 0, y: -6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.28, ease: [0.23, 1, 0.32, 1] as const, delay: 0.04 },
+  },
+};
+
+const contentSwapVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] as const },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.12, ease: "easeIn" as const },
+  },
+};
+
+function NotificationSkeleton() {
+  return (
+    <div className="flex animate-pulse gap-3 px-4 py-3.5" aria-hidden>
+      <div className="size-10 shrink-0 rounded-full bg-muted" />
+      <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+        <div className="h-3.5 w-[88%] rounded-md bg-muted" />
+        <div className="h-3 w-16 rounded-md bg-muted/80" />
+      </div>
+    </div>
+  );
+}
+
+function NotificationEmptyState() {
+  return (
+    <div className="flex flex-col items-center px-6 py-14 text-center">
+      <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted/80 ring-1 ring-border/60">
+        <Bell className="size-6 text-muted-foreground" strokeWidth={1.75} aria-hidden />
+      </div>
+      <p className="text-sm font-medium text-ink">You&apos;re all caught up</p>
+      <p className="mt-1 max-w-[220px] text-xs leading-relaxed text-muted-foreground">
+        Likes, replies, and channel updates will show up here.
+      </p>
+    </div>
+  );
+}
+
 export function NotificationMenu() {
   const [open, setOpen] = useState(false);
+  /** Bumped on each open so list entrance animations replay every time. */
+  const [openEpoch, setOpenEpoch] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<NotificationListItemData[]>([]);
   const [loading, setLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -30,7 +110,7 @@ export function NotificationMenu() {
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    setLoading(true);
+    setLoading(items.length === 0);
     try {
       const res = await fetch("/api/notifications?limit=20");
       if (!res.ok) return;
@@ -41,7 +121,7 @@ export function NotificationMenu() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [items.length]);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void fetchUnreadCount(), 0);
@@ -56,6 +136,7 @@ export function NotificationMenu() {
     setOpen((wasOpen) => {
       const next = !wasOpen;
       if (next) {
+        setOpenEpoch((e) => e + 1);
         void fetchNotifications();
         void fetchUnreadCount();
       }
@@ -68,8 +149,15 @@ export function NotificationMenu() {
     function onPointerDown(e: PointerEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open]);
 
   async function markAllRead() {
@@ -87,6 +175,32 @@ export function NotificationMenu() {
     }
   }
 
+  async function markItemRead(id: string) {
+    const item = items.find((n) => n.id === id);
+    if (!item || item.read) return;
+    setItems((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+    setUnreadCount((c) => Math.max(0, c - 1));
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [id] }),
+      });
+    } catch {
+      setItems((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: false } : n))
+      );
+      void fetchUnreadCount();
+    }
+  }
+
+  function handleItemNavigate(id: string) {
+    void markItemRead(id);
+    setOpen(false);
+  }
+
   return (
     <div ref={rootRef} className="relative">
       <NotificationButton
@@ -95,51 +209,96 @@ export function NotificationMenu() {
         onClick={handleToggle}
       />
 
-      {open && (
-        <div
-          role="menu"
-          aria-label="Notifications"
-          className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface-card font-[Roboto,sans-serif] shadow-[0_4px_32px_rgba(0,0,0,0.12)]"
-        >
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h2 className="text-base font-semibold text-ink">Notifications</h2>
-            {unreadCount > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs text-text-link"
-                onClick={() => void markAllRead()}
-              >
-                Mark all as read
-              </Button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key={openEpoch}
+            role="menu"
+            aria-label="Notifications"
+            initial={reducedMotion ? false : "hidden"}
+            animate="visible"
+            exit="exit"
+            variants={reducedMotion ? undefined : panelVariants}
+            style={{ transformOrigin: "top right" }}
+            className={cn(
+              headerPopoverPanelClass,
+              "w-[min(380px,calc(100vw-2rem))]"
             )}
-          </div>
+          >
+            <motion.div
+              variants={reducedMotion ? undefined : headerVariants}
+              initial={reducedMotion ? false : "hidden"}
+              animate="visible"
+              className="flex items-center gap-2 border-b border-border/80 bg-card px-4 py-3"
+            >
+              <h2 className="text-[15px] font-semibold tracking-tight text-ink">
+                Notifications
+              </h2>
+              {unreadCount > 0 && (
+                <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-primary">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+              <div className="flex-1" />
+              {unreadCount > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 px-2 text-xs font-medium text-text-link hover:bg-primary/10 hover:text-text-link"
+                  onClick={() => void markAllRead()}
+                >
+                  <CheckCheck className="size-3.5" aria-hidden />
+                  Mark all read
+                </Button>
+              )}
+            </motion.div>
 
-          <div className="max-h-[min(420px,70dvh)] overflow-y-auto">
-            {loading && items.length === 0 ? (
-              <div className="flex justify-center py-12">
-                <Spinner className="size-6" />
-              </div>
-            ) : items.length === 0 ? (
-              <p className="px-4 py-12 text-center text-sm text-muted-foreground">
-                No notifications yet
-              </p>
-            ) : (
-              <ul>
-                {items.map((item) => (
-                  <li key={item.id}>
+            <div className="max-h-[min(440px,70dvh)] overflow-y-auto overscroll-contain bg-card">
+              {loading && items.length === 0 ? (
+                <motion.div
+                  key="loading"
+                  variants={reducedMotion ? undefined : contentSwapVariants}
+                  initial={reducedMotion ? false : "hidden"}
+                  animate="visible"
+                  className="divide-y divide-border/60 py-1"
+                >
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <NotificationSkeleton key={i} />
+                  ))}
+                </motion.div>
+              ) : items.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  variants={reducedMotion ? undefined : contentSwapVariants}
+                  initial={reducedMotion ? false : "hidden"}
+                  animate="visible"
+                >
+                  <NotificationEmptyState />
+                </motion.div>
+              ) : (
+                <motion.ul
+                  key={`list-${openEpoch}`}
+                  role="presentation"
+                  className="divide-y divide-border/60 bg-card"
+                  variants={reducedMotion ? undefined : notificationListVariants}
+                  initial={reducedMotion ? false : "hidden"}
+                  animate="visible"
+                >
+                  {items.map((item, index) => (
                     <NotificationListItem
+                      key={`${openEpoch}-${item.id}`}
                       item={item}
-                      onNavigate={() => setOpen(false)}
+                      index={index}
+                      onNavigate={() => handleItemNavigate(item.id)}
                     />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
+                  ))}
+                </motion.ul>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

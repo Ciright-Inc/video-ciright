@@ -35,11 +35,25 @@ export function isMissingNotificationTableError(error: unknown): boolean {
   return isMissingTableError(error, "notification");
 }
 
+function isNotificationPermissionDeniedError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("permission denied for table notification") ||
+    message.includes("permission denied for table notificationactor") ||
+    message.includes("permission denied for table commentlike")
+  );
+}
+
 export function isMissingNotificationSchemaError(error: unknown): boolean {
   return (
     isMissingNotificationTableError(error) ||
     isMissingTableError(error, "notificationactor") ||
-    isMissingTableError(error, "commentlike")
+    isMissingTableError(error, "commentlike") ||
+    isNotificationPermissionDeniedError(error)
   );
 }
 
@@ -48,7 +62,7 @@ export function isMissingChannelGeoEventTableError(error: unknown): boolean {
 }
 
 const NOTIFICATIONS_SETUP_HINT =
-  "[notifications] tables missing — run: npm run db:setup-notifications";
+  "[notifications] schema or grants missing — run: npm run db:setup-notifications";
 
 export function warnMissingNotificationSchema(): void {
   if (process.env.NODE_ENV === "development") {

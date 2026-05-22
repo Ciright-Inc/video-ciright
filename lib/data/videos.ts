@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma, VideoStatus, Visibility } from "@prisma/client";
+import {
+  paginate,
+  paginateWithOffset,
+  type PaginatedResult,
+} from "@/lib/data/pagination";
 
 export const videoListSelect = {
   id: true,
@@ -26,14 +31,26 @@ export type VideoListItem = Prisma.VideoGetPayload<{
   select: typeof videoListSelect;
 }>;
 
+const DEFAULT_PAGE_LIMIT = 24;
+
 export async function getPublicVideos(options?: {
   limit?: number;
   cursor?: string;
   channelId?: string;
 }) {
-  const { limit = 24, cursor, channelId } = options ?? {};
+  const page = await getPublicVideosPage(options);
+  return page.items;
+}
 
-  return prisma.video.findMany({
+export async function getPublicVideosPage(options?: {
+  limit?: number;
+  cursor?: string;
+  channelId?: string;
+}): Promise<PaginatedResult<VideoListItem>> {
+  const { limit = DEFAULT_PAGE_LIMIT, cursor, channelId } = options ?? {};
+  const take = limit + 1;
+
+  const rows = await prisma.video.findMany({
     where: {
       status: VideoStatus.READY,
       visibility: Visibility.PUBLIC,
@@ -41,7 +58,7 @@ export async function getPublicVideos(options?: {
     },
     select: videoListSelect,
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take,
     ...(cursor
       ? {
           skip: 1,
@@ -49,6 +66,8 @@ export async function getPublicVideos(options?: {
         }
       : {}),
   });
+
+  return paginate(rows, limit);
 }
 
 export async function getVideoById(id: string) {
@@ -80,8 +99,22 @@ export async function getRelatedVideos(videoId: string, channelId: string, limit
   });
 }
 
-export async function searchVideos(query: string, limit = 24) {
-  if (!query.trim()) return [];
+export async function searchVideos(query: string, limit = DEFAULT_PAGE_LIMIT) {
+  const page = await searchVideosPage(query, { limit });
+  return page.items;
+}
+
+export async function searchVideosPage(
+  query: string,
+  options?: { limit?: number; cursor?: string }
+): Promise<PaginatedResult<VideoListItem>> {
+  const trimmed = query.trim();
+  if (!trimmed) return { items: [] };
+
+  const { limit = DEFAULT_PAGE_LIMIT, cursor } = options ?? {};
+  const offset = cursor ? Number.parseInt(cursor, 10) : 0;
+  const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+  const take = limit + 1;
 
   try {
     const rows = await prisma.$queryRaw<VideoListItem[]>`
@@ -98,15 +131,16 @@ export async function searchVideos(query: string, limit = 24) {
       WHERE v.status = 'READY'
         AND v.visibility = 'PUBLIC'
         AND to_tsvector('english', coalesce(v.title, '') || ' ' || coalesce(v.description, ''))
-            @@ plainto_tsquery('english', ${query})
+            @@ plainto_tsquery('english', ${trimmed})
       ORDER BY ts_rank(
         to_tsvector('english', coalesce(v.title, '') || ' ' || coalesce(v.description, '')),
-        plainto_tsquery('english', ${query})
+        plainto_tsquery('english', ${trimmed})
       ) DESC
-      LIMIT ${limit}
+      OFFSET ${safeOffset}
+      LIMIT ${take}
     `;
 
-    return rows.map((row) => ({
+    const mapped = rows.map((row) => ({
       ...row,
       status: row.status as VideoStatus,
       visibility: row.visibility as Visibility,
@@ -115,20 +149,30 @@ export async function searchVideos(query: string, limit = 24) {
           ? JSON.parse(row.channel)
           : row.channel,
     }));
+
+    return paginateWithOffset(mapped, limit, safeOffset);
   } catch {
-    return prisma.video.findMany({
+    const rows = await prisma.video.findMany({
       where: {
         status: VideoStatus.READY,
         visibility: Visibility.PUBLIC,
         OR: [
-          { title: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
+          { title: { contains: trimmed, mode: "insensitive" } },
+          { description: { contains: trimmed, mode: "insensitive" } },
         ],
       },
       select: videoListSelect,
-      orderBy: { views: "desc" },
-      take: limit,
+      orderBy: [{ views: "desc" }, { id: "desc" }],
+      take,
+      ...(cursor
+        ? {
+            skip: 1,
+            cursor: { id: cursor },
+          }
+        : {}),
     });
+
+    return paginate(rows, limit);
   }
 }
 
