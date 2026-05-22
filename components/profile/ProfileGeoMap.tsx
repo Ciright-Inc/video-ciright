@@ -6,8 +6,9 @@ import {
   Geographies,
   Geography,
   Marker,
-} from "react-simple-maps";
-import { geoCentroid } from "d3-geo";
+  getGeographyCentroid,
+  type Coordinates,
+} from "@vnedyalk0v/react19-simple-maps";
 import type { Topology } from "topojson-specification";
 import { feature } from "topojson-client";
 import type { FeatureCollection, Geometry } from "geojson";
@@ -104,13 +105,14 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
         const id = String(geo.id ?? "");
         const count = countById.get(id) ?? 0;
         if (count <= 0) return null;
-        const [lng, lat] = geoCentroid(geo);
-        return { id, count, coordinates: [lng, lat] as [number, number] };
+        const coordinates = getGeographyCentroid(geo);
+        if (!coordinates) return null;
+        return { id, count, coordinates };
       })
       .filter(Boolean) as {
       id: string;
       count: number;
-      coordinates: [number, number];
+      coordinates: Coordinates;
     }[];
   }, [geoFeatures, countById]);
 
@@ -169,7 +171,7 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
                     const isHovered = hoveredId === id;
                     return (
                       <Geography
-                        key={geo.rsmKey}
+                        key={id}
                         geography={geo}
                         onMouseEnter={() => setHoveredId(id)}
                         onMouseLeave={() => setHoveredId(null)}
