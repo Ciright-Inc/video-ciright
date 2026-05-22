@@ -159,10 +159,11 @@ export function StudioTable({ videos: initialVideos }: StudioTableProps) {
                 <td className="p-3">
                   <div className="flex gap-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => openEdit(video)}
                       disabled={loading}
+                      className="border-hairline bg-surface-soft text-ink hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
                     >
                       Edit
                     </Button>
