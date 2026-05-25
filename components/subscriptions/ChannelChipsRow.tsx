@@ -61,7 +61,7 @@ export function ChannelChipsRow({ channels }: ChannelChipsRowProps) {
             "flex shrink-0 items-center gap-2 rounded-pill border px-4 py-2 text-sm font-medium transition-colors",
             !activeChannelId
               ? "border-primary bg-primary/10 text-primary"
-              : "border-border bg-surface-soft text-body hover:bg-surface-strong"
+              : "border-border bg-surface-soft text-secondary-foreground hover:bg-surface-strong"
           )}
         >
           All
@@ -78,7 +78,7 @@ export function ChannelChipsRow({ channels }: ChannelChipsRowProps) {
               "flex shrink-0 items-center gap-2 rounded-pill border px-3 py-1.5 text-sm font-medium transition-colors",
               ch.id === activeChannelId
                 ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-surface-soft text-body hover:bg-surface-strong"
+                : "border-border bg-surface-soft text-secondary-foreground hover:bg-surface-strong"
             )}
           >
             <Avatar src={ch.avatarUrl} name={ch.name} size="sm" />

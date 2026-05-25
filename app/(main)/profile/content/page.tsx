@@ -26,7 +26,7 @@ export default async function ProfileContentPage() {
   return (
     <div>
       <h2 className="mb-2 text-lg font-semibold text-ink">Your videos</h2>
-      <p className="mb-6 text-sm text-body">
+      <p className="mb-6 text-sm text-secondary-foreground">
         Edit titles, visibility, or remove videos from your channel.
       </p>
       <StudioTable videos={videos} />

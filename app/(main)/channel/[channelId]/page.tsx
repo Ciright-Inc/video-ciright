@@ -37,7 +37,7 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
           <div className="pb-2">
             <h1 className="text-2xl font-bold text-ink">{channel.name}</h1>
             <p className="text-sm text-muted-foreground">@{channel.handle}</p>
-            <p className="text-sm text-body">
+            <p className="text-sm text-secondary-foreground">
               {channel._count.subscribers.toLocaleString()} subscribers ·{" "}
               {channel._count.videos} videos
             </p>
@@ -48,7 +48,7 @@ export default async function ChannelPage({ params }: ChannelPageProps) {
         )}
       </div>
       {channel.description && (
-        <p className="mt-4 px-2 text-sm text-body">{channel.description}</p>
+        <p className="mt-4 px-2 text-sm text-secondary-foreground">{channel.description}</p>
       )}
       <div className="mt-8">
         <h2 className="mb-4 text-lg font-semibold text-ink">Videos</h2>

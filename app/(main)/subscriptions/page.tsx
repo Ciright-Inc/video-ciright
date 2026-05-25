@@ -39,7 +39,7 @@ export default async function SubscriptionsPage({
         <h1 className="mb-2 text-xl font-semibold text-ink">
           No subscriptions yet
         </h1>
-        <p className="mb-6 max-w-md text-sm text-body">
+        <p className="mb-6 max-w-md text-sm text-secondary-foreground">
           Subscribe to channels you love and their latest videos will show up
           here. Start by exploring what&apos;s available.
         </p>
@@ -77,7 +77,7 @@ export default async function SubscriptionsPage({
       {initialPage.items.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-12 text-center">
           <Bell className="mx-auto mb-3 size-8 text-muted-foreground" />
-          <p className="text-body">
+          <p className="text-secondary-foreground">
             {activeChannel
               ? `${activeChannel.name} hasn't posted any videos yet.`
               : "No new videos from your subscriptions."}

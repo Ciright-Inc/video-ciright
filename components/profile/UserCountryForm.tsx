@@ -47,7 +47,7 @@ export function UserCountryForm({
       className="mt-8 rounded-xl border border-border bg-surface p-4"
     >
       <h2 className="text-sm font-semibold text-ink">Your country</h2>
-      <p className="mt-1 text-xs text-body">
+      <p className="mt-1 text-xs text-secondary-foreground">
         Used for audience analytics when you watch, like, or subscribe. Leave
         unset to estimate location from IP until you choose one.
       </p>

@@ -48,14 +48,14 @@
 
   /* Shadcn UI Theme Variables Mapping */
   --color-background: var(--color-canvas);
-  --color-foreground: var(--color-ink);
+  --color-foreground: var(--color-primary);
   --color-card: var(--color-surface-card);
   --color-card-foreground: var(--color-ink);
   --color-popover: var(--color-surface-soft);
   --color-popover-foreground: var(--color-ink);
   --color-primary-foreground: var(--color-on-primary);
   --color-secondary: var(--color-surface-strong);
-  --color-secondary-foreground: var(--color-ink);
+  --color-secondary-foreground: var(--color-body);
   --color-accent: var(--color-surface-soft);
   --color-accent-foreground: var(--color-ink);
   --color-destructive: var(--color-error);
@@ -110,7 +110,7 @@ body {
 }
 
 a {
-  color: var(--color-text-link);
+  color: var(--color-primary);
   text-decoration: none;
 }
 
@@ -165,15 +165,15 @@ a {
 
 :root {
   --background: var(--color-canvas);
-  --foreground: var(--color-ink);
+  --foreground: var(--color-primary);
   --card: var(--color-surface-card);
-  --card-foreground: var(--color-ink);
+  --card-foreground: var(--color-primary);
   --popover: var(--color-surface-soft);
-  --popover-foreground: var(--color-ink);
+  --popover-foreground: var(--color-primary);
   --primary: var(--color-primary);
   --primary-foreground: var(--color-on-primary);
   --secondary: var(--color-surface-strong);
-  --secondary-foreground: var(--color-ink);
+  --secondary-foreground: var(--color-body);
   --muted: var(--color-muted-bg);
   --muted-foreground: var(--color-muted-text);
   --accent: var(--color-surface-soft);
@@ -196,11 +196,11 @@ a {
   --input: var(--color-hairline);
   --ring: var(--color-primary);
   --sidebar: var(--color-canvas-soft);
-  --sidebar-foreground: var(--color-ink);
+  --sidebar-foreground: var(--color-primary);
   --sidebar-primary: var(--color-primary);
   --sidebar-primary-foreground: var(--color-on-primary);
   --sidebar-accent: var(--color-surface-soft);
-  --sidebar-accent-foreground: var(--color-ink);
+  --sidebar-accent-foreground: var(--color-primary);
   --sidebar-border: var(--color-hairline);
   --sidebar-ring: var(--color-primary);
 }

@@ -57,11 +57,11 @@ export function VideoInfo({
           <div className="min-w-0">
             <Link
               href={`/channel/${channel.id}`}
-              className="block truncate font-semibold text-ink hover:text-primary"
+              className="block truncate font-semibold text-primary hover:text-primary-hover"
             >
               {channel.name}
             </Link>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-secondary-foreground">
               {channel._count.subscribers.toLocaleString()} subscribers
             </p>
           </div>
@@ -75,6 +75,7 @@ export function VideoInfo({
 
         <VideoActionBar
           videoId={videoId}
+          title={title}
           likeCount={likeCount}
           dislikeCount={dislikeCount}
           userLikeValue={userLikeValue}
@@ -88,18 +89,18 @@ export function VideoInfo({
           className="w-full text-left"
           aria-expanded={expanded}
         >
-          <p className="text-sm font-medium text-ink">
+          <p className="text-sm font-medium text-secondary-foreground">
             {formatViews(views)} · {uploadedAgo}
           </p>
           {description && (
             <p
-              className={`mt-2 whitespace-pre-wrap text-sm text-body ${
+              className={`mt-2 whitespace-pre-wrap text-sm text-secondary-foreground ${
                 expanded ? "" : "line-clamp-2"
               }`}
             >
               {description}
               {showToggle && !expanded && (
-                <span className="font-medium text-ink"> …more</span>
+                <span className="font-medium text-primary"> …more</span>
               )}
             </p>
           )}
@@ -108,7 +109,7 @@ export function VideoInfo({
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="mt-1 text-sm font-medium text-ink hover:text-primary"
+            className="mt-1 text-sm font-medium text-primary hover:text-primary-hover"
           >
             Show less
           </button>

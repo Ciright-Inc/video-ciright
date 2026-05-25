@@ -103,14 +103,14 @@ function SidebarNavItem({
           ? "mx-auto w-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5"
           : "w-full flex-row items-center gap-3 rounded-xl px-3 py-2.5",
         active
-          ? "text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+          ? "text-primary"
+          : "text-primary/70 hover:bg-sidebar-accent/60 hover:text-primary"
       )}
     >
       {active && (
         <motion.div
           layoutId={SIDEBAR_NAV_INDICATOR_ID}
-          className="absolute inset-0 rounded-xl bg-sidebar-accent"
+          className="absolute inset-0 rounded-xl bg-primary/10"
           transition={reducedMotion ? { duration: 0 } : indicatorTransition}
         />
       )}

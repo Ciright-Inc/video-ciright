@@ -85,7 +85,7 @@ export function StudioTable({ videos: initialVideos }: StudioTableProps) {
 
   if (videos.length === 0) {
     return (
-      <p className="py-12 text-center text-body">
+      <p className="py-12 text-center text-secondary-foreground">
         No videos yet.{" "}
         <Link href="/upload" className="text-text-link">
           Upload your first video
@@ -150,7 +150,7 @@ export function StudioTable({ videos: initialVideos }: StudioTableProps) {
                     {video.status}
                   </Badge>
                 </td>
-                <td className="p-3 text-body">{formatViews(video.views)}</td>
+                <td className="p-3 text-secondary-foreground">{formatViews(video.views)}</td>
                 <td className="p-3 text-muted-foreground">
                   {formatDistanceToNow(new Date(video.createdAt), {
                     addSuffix: true,

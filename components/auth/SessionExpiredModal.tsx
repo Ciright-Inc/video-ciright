@@ -26,7 +26,7 @@ export function SessionExpiredModal() {
         >
           Session expired
         </h2>
-        <p className="mt-2 text-sm text-body">
+        <p className="mt-2 text-sm text-secondary-foreground">
           Your session has expired. Please sign in again.
         </p>
         <div className="mt-6 flex justify-end gap-2">

@@ -46,7 +46,7 @@ export default async function ProfileHistoryPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-ink">Watch history</h2>
-          <p className="text-sm text-body">
+          <p className="text-sm text-secondary-foreground">
             Videos you&apos;ve watched while signed in.
           </p>
         </div>
@@ -55,7 +55,7 @@ export default async function ProfileHistoryPage() {
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
-          <p className="text-body">No watch history yet.</p>
+          <p className="text-secondary-foreground">No watch history yet.</p>
           <Link
             href="/"
             className="mt-3 inline-block text-sm font-medium text-text-link no-underline hover:underline"

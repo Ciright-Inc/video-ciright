@@ -184,7 +184,7 @@ export function ChannelForm({
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-1">
           <h2 className="text-2xl font-semibold text-foreground">Channel settings</h2>
-          <p className="text-sm text-body">Manage your brand identity and public profile.</p>
+          <p className="text-sm text-secondary-foreground">Manage your brand identity and public profile.</p>
         </div>
         <Button
           type="submit"
@@ -219,7 +219,7 @@ export function ChannelForm({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-body">
+              <div className="flex h-full items-center justify-center text-sm text-secondary-foreground">
                 Banner preview
               </div>
             )}
@@ -231,7 +231,7 @@ export function ChannelForm({
                   className="size-24 rounded-full object-cover"
                 />
               ) : (
-                <div className="flex size-24 items-center justify-center rounded-full text-xs font-medium text-body">
+                <div className="flex size-24 items-center justify-center rounded-full text-xs font-medium text-secondary-foreground">
                   Avatar
                 </div>
               )}
@@ -241,7 +241,7 @@ export function ChannelForm({
           <div className="grid gap-4 px-6 pb-6 pt-16 md:grid-cols-2">
             <div className="flex flex-col gap-3">
               <p className="text-sm font-medium text-foreground">Banner image</p>
-              <p className="text-sm text-body">
+              <p className="text-sm text-secondary-foreground">
                 Use at least 2048 x 1152 pixels. Maximum file size: 50MB. Changes
                 apply when you save.
               </p>
@@ -266,7 +266,7 @@ export function ChannelForm({
 
             <div className="flex flex-col gap-3">
               <p className="text-sm font-medium text-foreground">Avatar image</p>
-              <p className="text-sm text-body">
+              <p className="text-sm text-secondary-foreground">
                 Recommended: 800 x 800 pixels. Maximum file size: 10MB. Changes apply
                 when you save.
               </p>
@@ -308,7 +308,7 @@ export function ChannelForm({
                 required
                 disabled={saving}
               />
-              <p className="text-sm text-body">
+              <p className="text-sm text-secondary-foreground">
                 Choose a name that represents you and your content.
               </p>
             </div>
@@ -318,7 +318,7 @@ export function ChannelForm({
                 Handle
               </label>
               <div className="flex items-center rounded-md border border-input bg-background">
-                <span className="px-3 text-sm text-body">@</span>
+                <span className="px-3 text-sm text-secondary-foreground">@</span>
                 <Input
                   id="channel-handle"
                   value={handle}
@@ -328,7 +328,7 @@ export function ChannelForm({
                   disabled={saving}
                 />
               </div>
-              <p className="text-sm text-body">Your unique identifier on the platform.</p>
+              <p className="text-sm text-secondary-foreground">Your unique identifier on the platform.</p>
             </div>
           </div>
 
@@ -345,8 +345,8 @@ export function ChannelForm({
               disabled={saving}
             />
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-body">Tell your fans what your channel is about.</p>
-              <span className="text-sm text-body">{description.length} / 1000</span>
+              <p className="text-sm text-secondary-foreground">Tell your fans what your channel is about.</p>
+              <span className="text-sm text-secondary-foreground">{description.length} / 1000</span>
             </div>
           </div>
         </div>

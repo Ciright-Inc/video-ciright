@@ -46,7 +46,7 @@ export default async function ProfileAnalyticsPage() {
   return (
     <div>
       <h2 className="mb-2 text-lg font-semibold text-ink">Analytics</h2>
-      <p className="mb-6 text-sm text-body">
+      <p className="mb-6 text-sm text-secondary-foreground">
         Views by upload day, top videos, and audience by country (from each
         viewer&apos;s profile country; anonymous viewers estimated from IP).
       </p>

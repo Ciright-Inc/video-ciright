@@ -81,7 +81,7 @@ export function VideoGridEmpty({
           </motion.div>
         )}
         <h2 className="mb-2 text-xl font-semibold text-ink">{title}</h2>
-        <p className="max-w-sm text-sm leading-relaxed text-body">{description}</p>
+        <p className="max-w-sm text-sm leading-relaxed text-secondary-foreground">{description}</p>
         {action ? (
           <Link href={action.href} className={cn(pillCtaLinkClass, "mt-6")}>
             <Plus className="size-4 text-primary" aria-hidden />

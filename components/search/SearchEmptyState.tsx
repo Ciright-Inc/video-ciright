@@ -96,7 +96,7 @@ export function SearchEmptyState(props: SearchEmptyStateProps) {
           </motion.div>
         )}
         <h2 className="mb-2 text-xl font-semibold text-ink">{title}</h2>
-        <p className="max-w-md text-sm leading-relaxed text-body">
+        <p className="max-w-md text-sm leading-relaxed text-secondary-foreground">
           {description}
         </p>
         {!isIdle ? (

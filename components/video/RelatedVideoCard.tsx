@@ -105,7 +105,7 @@ function CardContent({
         </Link>
         <Link
           href={`/channel/${video.channel.id}`}
-          className="mt-1 block truncate text-xs text-body transition-colors duration-300 hover:text-ink"
+          className="mt-1 block truncate text-xs text-secondary-foreground transition-colors duration-300 hover:text-primary"
         >
           {video.channel.name}
         </Link>

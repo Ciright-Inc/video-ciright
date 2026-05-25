@@ -87,19 +87,19 @@ export function DashboardCards(props: {
               </div>
             </Link>
           ) : (
-            <p className="mt-3 text-sm text-body">No uploads yet.</p>
+            <p className="mt-3 text-sm text-secondary-foreground">No uploads yet.</p>
           )}
         </div>
 
         <div className="rounded-xl border border-border bg-surface p-4">
           <h2 className="text-sm font-semibold text-ink">Latest comments on your videos</h2>
           {recentComments.length === 0 ? (
-            <p className="mt-3 text-sm text-body">No comments yet.</p>
+            <p className="mt-3 text-sm text-secondary-foreground">No comments yet.</p>
           ) : (
             <ul className="mt-3 space-y-3">
               {recentComments.map((c) => (
                 <li key={c.id} className="text-sm">
-                  <p className="line-clamp-2 text-body">{c.body}</p>
+                  <p className="line-clamp-2 text-secondary-foreground">{c.body}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     <span className="font-medium text-ink">
                       {c.author.name ?? "Someone"}

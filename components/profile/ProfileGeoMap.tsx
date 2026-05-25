@@ -96,7 +96,7 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-ink">Audience by country</h2>
-          <p className="mt-0.5 text-xs text-body">
+          <p className="mt-0.5 text-xs text-secondary-foreground">
             Countries are shaded by activity (profile country; anonymous viewers
             estimated from IP). Darker = more {metricLabel.toLowerCase()}.
           </p>
@@ -178,7 +178,7 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
 
           {totalCount > 0 && (
             <div
-              className="mt-2 flex items-center gap-2 text-[10px] text-body"
+              className="mt-2 flex items-center gap-2 text-[10px] text-secondary-foreground"
               aria-hidden
             >
               <span>Less</span>
@@ -199,7 +199,7 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
               role="status"
             >
               <span className="font-medium text-ink">{hovered.name}</span>
-              <span className="text-body">
+              <span className="text-secondary-foreground">
                 {" "}
                 · {hoveredCount.toLocaleString()} {metricLabel.toLowerCase()}
               </span>
@@ -210,7 +210,7 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
         <div className="flex flex-col gap-2">
           <p className="text-xs font-medium text-ink">Top countries</p>
           {totalCount === 0 ? (
-            <p className="text-xs text-body">
+            <p className="text-xs text-secondary-foreground">
               No {metricLabel.toLowerCase()} by country yet. Data appears as
               viewers interact with your channel.
             </p>
@@ -226,7 +226,7 @@ export function ProfileGeoMap({ geoByMetric }: { geoByMetric: GeoByMetric }) {
                       ? "Unknown"
                       : (countryNames.of(row.countryCode) ?? row.countryCode)}
                   </span>
-                  <span className="shrink-0 tabular-nums text-body">
+                  <span className="shrink-0 tabular-nums text-secondary-foreground">
                     {row.count.toLocaleString()}
                   </span>
                 </li>

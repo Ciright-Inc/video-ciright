@@ -80,7 +80,7 @@ function NavItem({
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative flex min-h-11 w-16 flex-col items-center justify-center gap-1 px-2 py-1.5 no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+        active ? "text-primary" : "text-primary/60 hover:text-primary"
       )}
     >
       {active && (

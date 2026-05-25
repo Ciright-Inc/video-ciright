@@ -95,7 +95,7 @@ function ProfileTabChip({
         "text-sm font-medium",
         active
           ? "text-primary-foreground!"
-          : "bg-muted text-body hover:bg-surface-soft hover:text-ink"
+          : "bg-muted text-secondary-foreground hover:bg-surface-soft hover:text-primary"
       )}
     >
       {active && (

@@ -9,7 +9,7 @@ export const cirightTheme: Theme = {
     primaryActive: "#002070",
     primaryDisabled: "#b8c4d8",
     onPrimary: "#ffffff",
-    textLink: "#1a56db",
+    textLink: "#003087",
 
     canvas: "#ffffff",
     canvasSoft: "#fafafa",
@@ -26,9 +26,9 @@ export const cirightTheme: Theme = {
     hairlineSoft: "#f0f4fb",
     hairlineStrong: "#c8d4ec",
 
-    ink: "#0a1628",
-    body: "#4a5568",
-    muted: "#4a5568",
+    ink: "#003087",
+    body: "#334155",
+    muted: "#475569",
     mutedSoft: "#b8c4d8",
     onDark: "#ffffff",
     onDarkSoft: "#a8b8d0",

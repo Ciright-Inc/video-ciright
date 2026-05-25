@@ -56,7 +56,7 @@ export function VideoCard({ video }: VideoCardProps) {
           </Link>
           <Link
             href={`/channel/${video.channel.id}`}
-            className="mt-1 block text-sm text-body hover:text-ink"
+            className="mt-1 block text-sm text-secondary-foreground hover:text-primary"
           >
             {video.channel.name}
           </Link>

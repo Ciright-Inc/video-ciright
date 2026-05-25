@@ -76,8 +76,8 @@ function CommentRow({
         className="shrink-0"
       />
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-ink">
-          <span className="font-medium">
+        <p className="text-xs">
+          <span className="font-medium text-primary">
             @{displayName.replace(/\s+/g, "").toLowerCase()}
           </span>
           <RelativeTime
@@ -85,7 +85,7 @@ function CommentRow({
             className="ml-2 text-muted-foreground"
           />
         </p>
-        <p className="mt-1 text-sm text-body">{comment.body}</p>
+        <p className="mt-1 text-sm text-secondary-foreground">{comment.body}</p>
         <div className="mt-1 flex items-center gap-1">
           <CommentLikeButtons
             commentId={comment.id}

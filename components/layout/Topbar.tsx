@@ -48,11 +48,11 @@ export function Topbar() {
 
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-1 py-1.5 text-foreground no-underline hover:no-underline"
+          className="flex shrink-0 items-center gap-1 py-1.5 text-primary no-underline hover:no-underline"
           aria-label="Ciright Video home"
         >
           <Logo className="size-7" />
-          <span className="hidden text-lg font-semibold tracking-tight sm:inline">
+          <span className="hidden text-lg font-semibold tracking-tight text-primary sm:inline">
             Ciright Video
           </span>
         </Link>

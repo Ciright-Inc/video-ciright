@@ -18,6 +18,7 @@ interface VideoPlayerProps {
 
 const SEEK_STEP = 10;
 const CONTROLS_HIDE_MS = 3000;
+const BUFFERING_SHOW_MS = 400;
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 function formatPlaybackSpeed(rate: number) {
@@ -50,6 +51,7 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
   const qualitySwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const bufferingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastClickRef = useRef(0);
   const speedMenuRef = useRef<HTMLDivElement>(null);
   const qualityMenuRef = useRef<HTMLDivElement>(null);
@@ -306,6 +308,10 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
     setQualityMenuOpen(false);
     setSwitchingQuality(false);
     setBuffering(false);
+    if (bufferingTimerRef.current) {
+      clearTimeout(bufferingTimerRef.current);
+      bufferingTimerRef.current = null;
+    }
 
     const isCurrent = () => loadIdRef.current === loadId;
 
@@ -392,6 +398,10 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
       setCurrentQuality(AUTO_QUALITY);
       setSwitchingQuality(false);
       setBuffering(false);
+      if (bufferingTimerRef.current) {
+        clearTimeout(bufferingTimerRef.current);
+        bufferingTimerRef.current = null;
+      }
       video.pause();
     };
   }, [src]);
@@ -436,9 +446,23 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
       setVolume(video.volume);
       setMuted(video.muted);
     };
-    const onWaiting = () => setBuffering(true);
-    const onCanPlay = () => {
+    const clearBuffering = () => {
+      if (bufferingTimerRef.current) {
+        clearTimeout(bufferingTimerRef.current);
+        bufferingTimerRef.current = null;
+      }
       setBuffering(false);
+    };
+
+    const onWaiting = () => {
+      if (bufferingTimerRef.current) return;
+      bufferingTimerRef.current = setTimeout(() => {
+        bufferingTimerRef.current = null;
+        setBuffering(true);
+      }, BUFFERING_SHOW_MS);
+    };
+    const onCanPlay = () => {
+      clearBuffering();
       setSwitchingQuality(false);
     };
 
@@ -542,6 +566,9 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
       if (qualitySwitchTimerRef.current) {
         clearTimeout(qualitySwitchTimerRef.current);
       }
+      if (bufferingTimerRef.current) {
+        clearTimeout(bufferingTimerRef.current);
+      }
     };
   }, []);
 
@@ -574,8 +601,9 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
   }, [playbackRate, src]);
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const showPlaybackSpinner =
-    sourceStatus === "ready" && (switchingQuality || (playing && buffering));
+  const showQualityOverlay = sourceStatus === "ready" && switchingQuality;
+  const showBufferingOverlay =
+    sourceStatus === "ready" && playing && buffering && !switchingQuality;
 
   return (
     <div
@@ -599,12 +627,18 @@ export function VideoPlayer({ src, poster, videoId }: VideoPlayerProps) {
         </div>
       )}
 
-      {showPlaybackSpinner && (
+      {showQualityOverlay && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface-dark/20">
           <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface-dark/70 px-4 py-3 text-on-dark backdrop-blur-sm">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-on-dark/30 border-t-on-dark" />
             <span className="text-xs font-medium">Switching quality</span>
           </div>
+        </div>
+      )}
+
+      {showBufferingOverlay && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface-dark/20">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-on-dark/30 border-t-on-dark" />
         </div>
       )}
 
