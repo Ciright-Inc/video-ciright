@@ -4,9 +4,10 @@ import Link from "next/link";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { MailIcon, PhoneIcon, UserIcon } from "lucide-react";
+import { MailIcon, UserIcon } from "lucide-react";
 import { CountrySelect } from "@/components/auth/CountrySelect";
 import { PasswordField } from "@/components/auth/PasswordField";
+import { PhoneField } from "@/components/auth/PhoneField";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -18,13 +19,15 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { formatPhoneE164 } from "@/lib/geo/phone";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function RegisterForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phoneDialCountry, setPhoneDialCountry] = useState("US");
+  const [phoneNational, setPhoneNational] = useState("");
   const [password, setPassword] = useState("");
   const [countryCode, setCountryCode] = useState("");
   const [error, setError] = useState("");
@@ -48,9 +51,9 @@ export default function RegisterForm() {
       return;
     }
 
-    const phoneStr = phone.trim();
-    if (!phoneStr) {
-      setError("Phone number is required");
+    const phoneE164 = formatPhoneE164(phoneDialCountry, phoneNational);
+    if (!phoneE164) {
+      setError("Enter a valid mobile number for your country");
       setLoading(false);
       return;
     }
@@ -61,7 +64,7 @@ export default function RegisterForm() {
       body: JSON.stringify({
         name: nameStr,
         email,
-        phone: phoneStr,
+        phone: phoneE164,
         password,
         countryCode,
       }),
@@ -151,30 +154,15 @@ export default function RegisterForm() {
             </InputGroup>
           </Field>
 
-          <Field data-invalid={!!error || undefined}>
-            <FieldLabel
-              htmlFor="register-phone"
-              className="text-sm font-bold text-ink"
-            >
-              Phone
-            </FieldLabel>
-            <InputGroup className="h-13 rounded-2xl border-hairline bg-canvas-soft/80 px-1 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset] transition-all has-[[data-slot=input-group-control]:focus-visible]:border-primary/50 has-[[data-slot=input-group-control]:focus-visible]:bg-surface-card has-[[data-slot=input-group-control]:focus-visible]:shadow-[0_10px_30px_rgba(0,48,135,0.09)]">
-              <InputGroupAddon align="inline-start">
-                <PhoneIcon className="size-4 text-muted-foreground" />
-              </InputGroupAddon>
-              <InputGroupInput
-                id="register-phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 555 000 0000"
-                autoComplete="tel"
-                required
-                aria-invalid={!!error || undefined}
-                className="h-13 text-base placeholder:text-muted-foreground/65"
-              />
-            </InputGroup>
-          </Field>
+          <PhoneField
+            id="register-phone"
+            dialCountry={phoneDialCountry}
+            onDialCountryChange={setPhoneDialCountry}
+            nationalNumber={phoneNational}
+            onNationalNumberChange={setPhoneNational}
+            required
+            invalid={!!error}
+          />
 
           <PasswordField
             id="register-password"

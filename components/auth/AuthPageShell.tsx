@@ -20,7 +20,7 @@ export function AuthPageShell({ children }: AuthPageShellProps) {
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px)] bg-size-[80px_80px] mask-[linear-gradient(90deg,black,transparent_72%)]"
       />
 
-      <div className="relative z-10 grid min-h-dvh w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_520px] xl:grid-cols-[minmax(0,1fr)_600px] 2xl:grid-cols-[minmax(0,1fr)_680px]">
+      <div className="relative z-10 flex min-h-dvh w-full flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_520px] xl:grid-cols-[minmax(0,1fr)_600px] 2xl:grid-cols-[minmax(0,1fr)_680px]">
         {children}
       </div>
 

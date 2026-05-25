@@ -2,34 +2,48 @@ import { BellIcon, PlayIcon, SparklesIcon, ThumbsUpIcon } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 
-export function AuthMarketingPanel() {
+function AuthBrandHeader({ className }: { className?: string }) {
   return (
-    <aside className="relative hidden min-h-dvh flex-col overflow-hidden px-8 pt-8 pb-8 text-white lg:flex xl:px-12 xl:pt-10 xl:pb-10 2xl:px-16">
-      {/* Decorative background orbs */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-24 right-8 h-64 w-64 rounded-full border border-white/8"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-24 left-16 h-72 w-72 rounded-full bg-white/8 blur-3xl"
-      />
-
-      {/* ── Top bar ── */}
-      <div className="relative z-10 mb-8 flex shrink-0 items-center justify-between xl:mb-10">
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-2xl bg-white shadow-[0_12px_32px_rgba(0,0,0,0.18)]">
-            <Logo size={30} />
-          </span>
-          <span className="text-lg font-bold tracking-tight">Ciright Video</span>
-        </div>
-        <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-white/70 uppercase backdrop-blur">
-          Studio
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-between gap-4",
+        className,
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/8 lg:bg-white lg:shadow-[0_12px_32px_rgba(0,0,0,0.18)]">
+          <Logo size={30} />
+        </span>
+        <span className="truncate text-lg font-bold tracking-tight text-ink lg:text-inherit">
+          Ciright Video
         </span>
       </div>
+      <span className="hidden shrink-0 rounded-full border border-primary/12 bg-primary/6 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-primary uppercase backdrop-blur sm:inline lg:border-white/15 lg:bg-white/10 lg:text-white/70">
+        Studio
+      </span>
+    </div>
+  );
+}
 
-      {/* ── Headline ── */}
-      <div className="relative z-10 mb-4 shrink-0 xl:mb-6">
+export function AuthMarketingPanel() {
+  return (
+    <aside className="relative flex shrink-0 flex-col overflow-hidden px-6 pt-6 pb-2 text-ink lg:min-h-dvh lg:px-8 lg:pt-8 lg:pb-8 lg:text-white xl:px-12 xl:pt-10 xl:pb-10 2xl:px-16">
+      {/* Decorative background orbs — desktop only */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-24 right-8 hidden h-64 w-64 rounded-full border border-white/8 lg:block"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 left-16 hidden h-72 w-72 rounded-full bg-white/8 blur-3xl lg:block"
+      />
+
+      {/* ── Top bar — visible on all screen sizes ── */}
+      <AuthBrandHeader className="relative z-10 lg:mb-8 xl:mb-10" />
+
+      {/* ── Headline & mockup — desktop only ── */}
+      <div className="relative z-10 hidden min-h-0 flex-1 flex-col lg:flex">
+        <div className="mb-4 shrink-0 xl:mb-6">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 backdrop-blur xl:mb-4">
           <SparklesIcon className="size-3.5 text-white" />
           Built for creators, teams, and viewers
@@ -43,14 +57,14 @@ export function AuthMarketingPanel() {
         </h1>
       </div>
 
-      <p className="relative z-10 mb-6 max-w-md shrink-0 text-[15px] leading-7 text-white/65 xl:mb-8 xl:text-base xl:leading-8">
-        Manage your video library, keep your audience moving, and publish with a
-        workflow that feels fast from the first click.
-      </p>
+        <p className="mb-6 max-w-md shrink-0 text-[15px] leading-7 text-white/65 xl:mb-8 xl:text-base xl:leading-8">
+          Manage your video library, keep your audience moving, and publish with a
+          workflow that feels fast from the first click.
+        </p>
 
-      {/* ── Dashboard mockup — capped height, centred ── */}
-      <div className="relative z-10 flex min-h-0 flex-1 items-center">
-        <div className="w-full max-w-[520px]">
+        {/* ── Dashboard mockup — capped height, centred ── */}
+        <div className="flex min-h-0 flex-1 items-center">
+          <div className="w-full max-w-[520px]">
           {/* Outer glass frame */}
           <div className="relative rounded-[24px] border border-white/15 bg-white/10 p-3 shadow-[0_24px_72px_rgba(0,0,0,0.26)] backdrop-blur-2xl xl:rounded-[28px] xl:p-3.5">
             {/* Inner white card */}
@@ -125,6 +139,7 @@ export function AuthMarketingPanel() {
             </FloatingBadge>
           </div>
         </div>
+      </div>
       </div>
     </aside>
   );

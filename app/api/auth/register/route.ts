@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cirightSignUp } from "@/lib/ciright-auth";
 import { syncLocalUserFromCiright } from "@/lib/auth/sync-local-user";
+import { formatPhoneE164, parsePhoneE164 } from "@/lib/geo/phone";
 import { normalizeCountryCode } from "@/lib/geo/validCountryCode";
 
 export async function POST(request: Request) {
@@ -21,9 +22,15 @@ export async function POST(request: Request) {
     }
 
     const phoneStr = String(phone ?? "").trim();
-    if (!phoneStr) {
+    const phoneE164 = phoneStr.startsWith("+")
+      ? parsePhoneE164(phoneStr)
+      : formatPhoneE164(
+          normalizeCountryCode(String(rawCountry ?? "")) ?? "",
+          phoneStr
+        );
+    if (!phoneE164) {
       return NextResponse.json(
-        { error: "Phone number is required" },
+        { error: "A valid phone number is required" },
         { status: 400 }
       );
     }
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
     const signupResult = await cirightSignUp({
       name: displayName,
       email: normalizedEmail,
-      phone: phoneStr,
+      phone: phoneE164,
       password: String(password),
     });
 

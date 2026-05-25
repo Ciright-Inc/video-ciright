@@ -8,8 +8,10 @@ export default function AuthLayout({
 }) {
   return (
     <AuthPageShell>
-      <AuthMarketingPanel />
-      {children}
+      <div className="flex min-h-0 flex-1 flex-col bg-surface-card lg:contents">
+        <AuthMarketingPanel />
+        {children}
+      </div>
     </AuthPageShell>
   );
 }
