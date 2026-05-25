@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { AlertCircleIcon, MailIcon, ShieldCheckIcon } from "lucide-react";
+import { AlertCircleIcon, UserIcon } from "lucide-react";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ type LoginFormProps = {
 
 export default function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export default function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
     setError("");
 
     const result = await signIn("credentials", {
-      email,
+      username: username.trim(),
       password,
       redirect: false,
     });
@@ -44,7 +44,7 @@ export default function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError("Invalid username or password");
       return;
     }
 
@@ -58,22 +58,22 @@ export default function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
         <FieldGroup className="gap-5">
           <Field data-invalid={!!error || undefined}>
             <FieldLabel
-              htmlFor="login-email"
+              htmlFor="login-username"
               className="text-sm font-bold text-ink"
             >
-              Email address
+              Username
             </FieldLabel>
             <InputGroup className="h-13 rounded-2xl border-hairline bg-canvas-soft/80 px-1 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset] transition-all has-[[data-slot=input-group-control]:focus-visible]:border-primary/50 has-[[data-slot=input-group-control]:focus-visible]:bg-surface-card has-[[data-slot=input-group-control]:focus-visible]:shadow-[0_10px_30px_rgba(0,48,135,0.09)]">
               <InputGroupAddon align="inline-start">
-                <MailIcon className="size-4 text-muted-foreground" />
+                <UserIcon className="size-4 text-muted-foreground" />
               </InputGroupAddon>
               <InputGroupInput
-                id="login-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
+                id="login-username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Your Ciright username"
+                autoComplete="username"
                 required
                 aria-invalid={!!error || undefined}
                 className="h-13 text-base placeholder:text-muted-foreground/65"
@@ -122,13 +122,13 @@ export default function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
       <div className="rounded-3xl border border-hairline-soft bg-canvas-soft/70 p-4">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-            <ShieldCheckIcon className="size-5" />
+            <UserIcon className="size-5" />
           </span>
           <div>
-            <p className="text-sm font-bold text-ink">Protected workspace</p>
+            <p className="text-sm font-bold text-ink">Ciright account</p>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Your uploads, subscriptions, and channel tools stay connected to
-              your account.
+              Sign in with your Ciright username and password. Your uploads,
+              subscriptions, and channel tools stay connected to your account.
             </p>
           </div>
         </div>

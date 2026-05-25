@@ -1,10 +1,11 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { slugifyHandle } from "@/lib/format";
 import { authConfig } from "@/auth.config";
+import { cirightLogin } from "@/lib/ciright-auth";
+import { syncLocalUserFromCiright } from "@/lib/auth/sync-local-user";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -13,31 +14,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.username || !credentials?.password) return null;
 
-        const email = String(credentials.email).toLowerCase();
-        const user = await prisma.user.findUnique({
-          where: { email },
-          include: { channel: true },
+        const loginResult = await cirightLogin({
+          username: String(credentials.username).trim(),
+          password: String(credentials.password),
         });
 
-        if (!user?.passwordHash) return null;
+        if (!loginResult.ok) return null;
 
-        const valid = await bcrypt.compare(
-          String(credentials.password),
-          user.passwordHash
-        );
-        if (!valid) return null;
+        const { employee, userToken, token } = loginResult.data;
+
+        const localUser = await syncLocalUserFromCiright({
+          email: employee.email,
+          name: employee.name,
+          image: employee.employeePhoto ?? null,
+        });
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
+          id: localUser.id,
+          email: localUser.email,
+          name: localUser.name,
+          image: localUser.image,
+          channelId: localUser.channelId,
+          channelHandle: localUser.channelHandle,
+          cirightUserToken: userToken,
+          cirightToken: token,
+          cirightEmployeeId: employee.employeeId,
         };
       },
     }),
@@ -46,6 +53,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
+        const u = user as {
+          channelId?: string;
+          channelHandle?: string;
+          cirightUserToken?: string;
+          cirightToken?: string;
+          cirightEmployeeId?: number;
+        };
+        if (u.channelId) token.channelId = u.channelId;
+        if (u.channelHandle) token.channelHandle = u.channelHandle;
+        if (u.cirightUserToken) token.cirightUserToken = u.cirightUserToken;
+        if (u.cirightToken) token.cirightToken = u.cirightToken;
+        if (u.cirightEmployeeId != null) {
+          token.cirightEmployeeId = u.cirightEmployeeId;
+        }
+        if (user.name) token.name = user.name;
+        if (user.image) token.picture = user.image;
       }
 
       if (trigger === "update" && session?.name) {
@@ -101,9 +124,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } else {
           Reflect.deleteProperty(session.user, "id");
         }
-        session.user.channelId = (token.channelId as string | null) ?? null;
+        session.user.channelId =
+          (token.channelId as string | null | undefined) ?? undefined;
         session.user.channelHandle =
-          (token.channelHandle as string | null) ?? null;
+          (token.channelHandle as string | null | undefined) ?? undefined;
         if (token.picture !== undefined) {
           session.user.image = (token.picture as string | null) ?? null;
         }
@@ -120,6 +144,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.id || !user.email) return;
+      const existing = await prisma.channel.findUnique({
+        where: { ownerId: user.id },
+      });
+      if (existing) return;
+
       const base = slugifyHandle(user.name ?? user.email.split("@")[0]);
       let handle = base;
       let i = 0;

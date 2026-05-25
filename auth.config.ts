@@ -18,9 +18,9 @@ export const authConfig = {
       if (session.user) {
         session.user.id = (token.id as string) ?? session.user.id;
         session.user.channelId =
-          (token.channelId as string | null | undefined) ?? null;
+          (token.channelId as string | null | undefined) ?? undefined;
         session.user.channelHandle =
-          (token.channelHandle as string | null | undefined) ?? null;
+          (token.channelHandle as string | null | undefined) ?? undefined;
         if (token.picture !== undefined) {
           session.user.image = (token.picture as string | null) ?? null;
         }

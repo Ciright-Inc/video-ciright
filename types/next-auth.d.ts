@@ -14,6 +14,14 @@ declare module "next-auth" {
       channelHandle?: string | null;
     };
   }
+
+  interface User {
+    channelId?: string;
+    channelHandle?: string;
+    cirightUserToken?: string;
+    cirightToken?: string;
+    cirightEmployeeId?: number;
+  }
 }
 
 declare module "next-auth/jwt" {
@@ -21,5 +29,8 @@ declare module "next-auth/jwt" {
     id?: string;
     channelId?: string | null;
     channelHandle?: string | null;
+    cirightUserToken?: string;
+    cirightToken?: string;
+    cirightEmployeeId?: number;
   }
 }

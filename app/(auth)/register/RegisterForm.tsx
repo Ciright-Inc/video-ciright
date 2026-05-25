@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { MailIcon, UserIcon } from "lucide-react";
+import { MailIcon, PhoneIcon, UserIcon } from "lucide-react";
 import { CountrySelect } from "@/components/auth/CountrySelect";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export default function RegisterForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [countryCode, setCountryCode] = useState("");
   const [error, setError] = useState("");
@@ -34,8 +35,22 @@ export default function RegisterForm() {
     setLoading(true);
     setError("");
 
+    const nameStr = name.trim();
+    if (!nameStr) {
+      setError("Name is required");
+      setLoading(false);
+      return;
+    }
+
     if (!countryCode) {
       setError("Please select your country");
+      setLoading(false);
+      return;
+    }
+
+    const phoneStr = phone.trim();
+    if (!phoneStr) {
+      setError("Phone number is required");
       setLoading(false);
       return;
     }
@@ -43,7 +58,13 @@ export default function RegisterForm() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, countryCode }),
+      body: JSON.stringify({
+        name: nameStr,
+        email,
+        phone: phoneStr,
+        password,
+        countryCode,
+      }),
     });
 
     const data = await res.json();
@@ -55,7 +76,7 @@ export default function RegisterForm() {
     }
 
     const result = await signIn("credentials", {
-      email,
+      username: nameStr,
       password,
       redirect: false,
     });
@@ -123,6 +144,31 @@ export default function RegisterForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
+                required
+                aria-invalid={!!error || undefined}
+                className="h-13 text-base placeholder:text-muted-foreground/65"
+              />
+            </InputGroup>
+          </Field>
+
+          <Field data-invalid={!!error || undefined}>
+            <FieldLabel
+              htmlFor="register-phone"
+              className="text-sm font-bold text-ink"
+            >
+              Phone
+            </FieldLabel>
+            <InputGroup className="h-13 rounded-2xl border-hairline bg-canvas-soft/80 px-1 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset] transition-all has-[[data-slot=input-group-control]:focus-visible]:border-primary/50 has-[[data-slot=input-group-control]:focus-visible]:bg-surface-card has-[[data-slot=input-group-control]:focus-visible]:shadow-[0_10px_30px_rgba(0,48,135,0.09)]">
+              <InputGroupAddon align="inline-start">
+                <PhoneIcon className="size-4 text-muted-foreground" />
+              </InputGroupAddon>
+              <InputGroupInput
+                id="register-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 555 000 0000"
+                autoComplete="tel"
                 required
                 aria-invalid={!!error || undefined}
                 className="h-13 text-base placeholder:text-muted-foreground/65"

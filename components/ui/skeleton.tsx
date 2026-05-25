@@ -32,4 +32,18 @@ export function VideoCardSkeleton() {
   )
 }
 
+/** Matches RelatedVideoCard horizontal layout */
+export function RelatedVideoRowSkeleton() {
+  return (
+    <div className="flex gap-2">
+      <Skeleton className="aspect-video w-[168px] shrink-0 rounded-md" />
+      <div className="flex min-w-0 flex-1 flex-col gap-2 py-0.5">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-3 w-2/5" />
+      </div>
+    </div>
+  )
+}
+
 export { Skeleton }

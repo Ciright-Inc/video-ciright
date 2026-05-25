@@ -25,6 +25,22 @@ export const PREMIUM_SPRING_GENTLE = {
   mass: 1,
 };
 
+/** Hover / lift — slower, heavier settle */
+export const PREMIUM_SPRING_HOVER = {
+  type: "spring" as const,
+  stiffness: 170,
+  damping: 34,
+  mass: 1.15,
+};
+
+/** Press feedback — quick but not snappy */
+export const PREMIUM_SPRING_PRESS = {
+  type: "spring" as const,
+  stiffness: 320,
+  damping: 32,
+  mass: 0.9,
+};
+
 /** List row entrance — layered fade, lift, de-blur, and soft scale */
 export const ENTRANCE_TRANSITION = {
   opacity: { duration: 0.55, ease: PREMIUM_EASE },
@@ -60,8 +76,8 @@ export const listItemVariants = {
   },
 };
 
-/** Propagates from motion.li — thumbnail then metadata cascade */
-export const cardContentVariants = {
+/** Propagates from motion.li — thumbnail then metadata cascade + hover group */
+export const cardArticleVariants = {
   hidden: {},
   visible: {
     transition: {
@@ -69,23 +85,46 @@ export const cardContentVariants = {
       delayChildren: 0.12,
     },
   },
+  hover: {
+    x: 2,
+    transition: PREMIUM_SPRING_HOVER,
+  },
+  tap: {
+    x: 1,
+    scale: 0.998,
+    transition: PREMIUM_SPRING_PRESS,
+  },
 };
 
 export const cardThumbVariants = {
-  hidden: { opacity: 0, scale: 0.92 },
+  hidden: { opacity: 0, scale: 0.94, filter: "blur(6px)" },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.48, ease: PREMIUM_EASE },
+    filter: "blur(0px)",
+    transition: {
+      opacity: { duration: 0.5, ease: PREMIUM_EASE },
+      scale: { ...PREMIUM_SPRING_GENTLE },
+      filter: { duration: 0.45, ease: PREMIUM_EASE },
+    },
+  },
+  hover: {
+    scale: 1.02,
+    filter: "brightness(1.03)",
+    transition: PREMIUM_SPRING_HOVER,
   },
 };
 
 export const cardTextVariants = {
-  hidden: { opacity: 0, x: -8 },
+  hidden: { opacity: 0, x: -6 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.42, ease: PREMIUM_EASE },
+    transition: { duration: 0.45, ease: PREMIUM_EASE },
+  },
+  hover: {
+    x: 1,
+    transition: PREMIUM_SPRING_HOVER,
   },
 };
 

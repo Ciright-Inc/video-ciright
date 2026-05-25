@@ -7,11 +7,9 @@ import { motion, useReducedMotion } from "motion/react";
 import { formatDuration, formatViews } from "@/lib/format";
 import type { VideoListItem } from "@/lib/data/videos";
 import {
-  cardContentVariants,
+  cardArticleVariants,
   cardTextVariants,
   cardThumbVariants,
-  PREMIUM_SPRING,
-  PREMIUM_SPRING_GENTLE,
 } from "./motion-presets";
 
 interface RelatedVideoCardProps {
@@ -33,11 +31,10 @@ export function RelatedVideoCard({ video, contextDate }: RelatedVideoCardProps) 
 
   return (
     <motion.article
-      className="group flex gap-2 rounded-[var(--radius-md)] transition-[background-color,box-shadow] duration-300 hover:bg-surface-soft/60"
-      variants={cardContentVariants}
-      whileHover={{ x: 4 }}
-      whileTap={{ scale: 0.995 }}
-      transition={PREMIUM_SPRING}
+      className="group flex gap-2 rounded-[var(--radius-md)] transition-[background-color,box-shadow] duration-500 ease-out hover:bg-surface-soft/60"
+      variants={cardArticleVariants}
+      whileHover="hover"
+      whileTap="tap"
     >
       <CardContent video={video} contextDate={contextDate} animated />
     </motion.article>
@@ -67,18 +64,7 @@ function CardContent({
         href={`/watch/${video.id}`}
         className="relative block w-[168px] shrink-0 overflow-hidden rounded-[var(--radius-md)]"
       >
-        <Thumb
-          className="relative aspect-video bg-surface-strong"
-          {...thumbProps}
-          {...(animated
-            ? {
-                whileHover: {
-                  scale: 1.03,
-                  transition: PREMIUM_SPRING_GENTLE,
-                },
-              }
-            : {})}
-        >
+        <Thumb className="relative aspect-video bg-surface-strong" {...thumbProps}>
           {video.thumbnailUrl && (
             <Image
               src={video.thumbnailUrl}

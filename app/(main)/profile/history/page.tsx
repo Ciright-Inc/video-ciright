@@ -1,30 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { videoListSelect } from "@/lib/data/videos";
-import { HistoryVideoSections } from "@/components/video/HistoryVideoSections";
 import { ClearHistoryButton } from "@/components/profile/ClearHistoryButton";
-import { groupWatchHistory } from "@/lib/profile/historyGroups";
-import { isMissingWatchHistoryTableError } from "@/lib/prisma-errors";
-
-async function getWatchHistoryRows(userId: string) {
-  try {
-    return await prisma.watchHistory.findMany({
-      where: { userId },
-      orderBy: { watchedAt: "desc" },
-      take: 200,
-      include: {
-        video: { select: videoListSelect },
-      },
-    });
-  } catch (error) {
-    if (isMissingWatchHistoryTableError(error)) {
-      return [];
-    }
-    throw error;
-  }
-}
+import { WatchHistoryFeed } from "@/components/video/WatchHistoryFeed";
+import { getWatchHistoryPage } from "@/lib/profile/watchHistoryPage";
 
 export default async function ProfileHistoryPage() {
   const session = await auth();
@@ -32,14 +11,8 @@ export default async function ProfileHistoryPage() {
     redirect("/login?callbackUrl=/profile/history");
   }
 
-  const rows = await getWatchHistoryRows(session.user.id);
-
-  const grouped = groupWatchHistory(
-    rows.map((r) => ({
-      watchedAt: r.watchedAt,
-      video: r.video,
-    }))
-  );
+  const initialPage = await getWatchHistoryPage(session.user.id, 1);
+  const hasHistory = initialPage.total > 0;
 
   return (
     <div>
@@ -50,10 +23,10 @@ export default async function ProfileHistoryPage() {
             Videos you&apos;ve watched while signed in.
           </p>
         </div>
-        {rows.length > 0 ? <ClearHistoryButton /> : null}
+        {hasHistory ? <ClearHistoryButton /> : null}
       </div>
 
-      {rows.length === 0 ? (
+      {!hasHistory ? (
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
           <p className="text-secondary-foreground">No watch history yet.</p>
           <Link
@@ -64,16 +37,7 @@ export default async function ProfileHistoryPage() {
           </Link>
         </div>
       ) : (
-        <HistoryVideoSections
-          sections={grouped.map((section) => ({
-            label: section.label,
-            items: section.rows.map((row) => ({
-              video: row.video,
-              contextDate: row.watchedAt,
-              key: `${row.video.id}-${row.watchedAt.toISOString()}`,
-            })),
-          }))}
-        />
+        <WatchHistoryFeed initialPage={initialPage} />
       )}
     </div>
   );
