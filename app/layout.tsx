@@ -13,11 +13,8 @@ export const metadata: Metadata = {
   title: "Ciright Video",
   description: siteDescription,
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/logo.png", type: "image/png" },
-    ],
-    apple: "/logo.png",
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
     title: "Ciright Video",
