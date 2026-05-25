@@ -72,6 +72,7 @@
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-active: var(--sidebar-active);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -112,6 +113,16 @@ body {
 a {
   color: var(--color-primary);
   text-decoration: none;
+}
+
+/* Sidebar links use token text colors, not global primary (black) */
+aside[role="navigation"] a {
+  color: inherit;
+}
+
+/* Topbar sidebar brand zone — same as nav */
+[data-sidebar-topbar] a {
+  color: inherit;
 }
 
 /* Video player volume — white thumb & fill on dark controls */
@@ -195,14 +206,16 @@ a {
   --border: var(--color-hairline-strong);
   --input: var(--color-hairline-strong);
   --ring: var(--color-primary);
-  --sidebar: var(--color-canvas-soft);
-  --sidebar-foreground: var(--color-primary);
-  --sidebar-primary: var(--color-primary);
-  --sidebar-primary-foreground: var(--color-on-primary);
-  --sidebar-accent: var(--color-surface-soft);
-  --sidebar-accent-foreground: var(--color-primary);
-  --sidebar-border: var(--color-hairline-strong);
-  --sidebar-ring: var(--color-primary);
+  /* Keyra dashboard sidebar — keyra_theme.md §2.8 */
+  --sidebar: var(--color-surface-dark);
+  --sidebar-foreground: var(--color-on-dark);
+  --sidebar-primary: var(--color-on-dark);
+  --sidebar-primary-foreground: var(--color-surface-dark);
+  --sidebar-accent: rgb(255 255 255 / 0.08);
+  --sidebar-active: rgb(255 255 255 / 0.12);
+  --sidebar-accent-foreground: var(--color-on-dark);
+  --sidebar-border: var(--color-surface-dark-elevated);
+  --sidebar-ring: var(--color-on-dark);
 }
 
 @layer base {
@@ -286,5 +299,24 @@ a {
 
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Dark sidebar scroll — CRM / keyra §2.8 */
+@utility sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.22);
   }
 }

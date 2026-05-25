@@ -19,10 +19,16 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/SidebarProvider";
 import { AvatarMenu } from "@/components/auth/AvatarMenu";
 
+const sidebarZoneTransition =
+  "transition-[width] duration-280 ease-[cubic-bezier(0.4,0,0.2,1)]";
+
+const sidebarToggleClassName =
+  "text-on-dark hover:bg-sidebar-accent hover:text-on-dark aria-expanded:bg-sidebar-accent aria-expanded:text-on-dark dark:hover:bg-sidebar-accent/80";
+
 export function Topbar() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { toggle } = useSidebar();
+  const { collapsed, toggle } = useSidebar();
   const [query, setQuery] = useState("");
 
   function handleSearch(e: FormEvent) {
@@ -33,30 +39,53 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center bg-background px-4">
-      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center bg-background">
+      <div
+        data-sidebar-topbar
+        className={cn(
+          "hidden h-14 shrink-0 items-center overflow-hidden border-r border-sidebar-border bg-sidebar text-on-dark md:flex",
+          sidebarZoneTransition,
+          collapsed ? "w-[72px] justify-center" : "w-[240px] gap-4 px-4"
+        )}
+      >
         <Button
           type="button"
           variant="ghost"
           size="icon-lg"
-          className="hidden size-10 md:inline-flex"
+          className={cn("size-10 shrink-0", sidebarToggleClassName)}
           onClick={toggle}
           aria-label="Toggle sidebar"
         >
           <Menu className="size-6" />
         </Button>
 
-        <Link
-          href="/"
-          className="flex shrink-0 items-center gap-1 py-1.5 text-primary no-underline hover:no-underline"
-          aria-label="Ciright Video home"
-        >
-          <Logo className="size-7" />
-          <span className="hidden text-lg font-semibold tracking-tight text-primary sm:inline">
-            Ciright Video
-          </span>
-        </Link>
+        {!collapsed && (
+          <Link
+            href="/"
+            className="flex min-w-0 shrink-0 items-center gap-1 py-1.5 text-on-dark no-underline hover:no-underline"
+            aria-label="Ciright Video home"
+          >
+            <Logo className="size-7 fill-on-dark text-on-dark" />
+            <span className="truncate text-lg font-semibold tracking-tight text-on-dark">
+              Ciright Video
+            </span>
+          </Link>
+        )}
       </div>
+
+      <Link
+        href="/"
+        className={cn(
+          "flex shrink-0 items-center gap-1 py-1.5 text-primary no-underline hover:no-underline",
+          collapsed ? "pl-4 md:flex" : "pl-4 md:hidden"
+        )}
+        aria-label="Ciright Video home"
+      >
+        <Logo className="size-7" />
+        <span className="hidden text-lg font-semibold tracking-tight text-primary sm:inline">
+          Ciright Video
+        </span>
+      </Link>
 
       <div className="mx-4 hidden min-w-0 flex-1 items-center justify-center md:flex">
         <form
@@ -85,7 +114,7 @@ export function Topbar() {
         </form>
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center justify-end gap-1 sm:gap-2 md:ml-0">
+      <div className="ml-auto flex shrink-0 items-center justify-end gap-1 px-4 sm:gap-2 md:ml-0">
         <Link
           href="/search?focus=1"
           aria-label="Search"

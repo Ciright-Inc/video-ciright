@@ -16,7 +16,8 @@ import { useSidebar } from "@/components/providers/SidebarProvider";
 
 const SIDEBAR_WIDTH_COLLAPSED = 72;
 const SIDEBAR_WIDTH_EXPANDED = 240;
-const SIDEBAR_NAV_INDICATOR_ID = "sidebar-nav-active";
+const SIDEBAR_NAV_INDICATOR_EXPANDED = "sidebar-nav-active-expanded";
+const SIDEBAR_NAV_INDICATOR_COLLAPSED = "sidebar-nav-active-collapsed";
 
 const sidebarTransition = {
   duration: 0.28,
@@ -24,9 +25,8 @@ const sidebarTransition = {
 };
 
 const indicatorTransition = {
-  type: "spring" as const,
-  stiffness: 500,
-  damping: 35,
+  duration: 0.2,
+  ease: [0.4, 0, 0.2, 1] as const,
 };
 
 export function Sidebar() {
@@ -44,13 +44,13 @@ export function Sidebar() {
         width: collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED,
       }}
       transition={transition}
-      className="hidden h-full shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar md:flex"
+      className="hidden h-full shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex"
     >
       <LayoutGroup id="sidebar-nav">
         <nav
           className={cn(
-            "flex min-h-0 flex-1 flex-col overflow-y-auto",
-            collapsed ? "items-stretch gap-1 py-3" : "gap-0.5 p-2"
+            "sidebar-scroll flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto",
+            collapsed ? "items-stretch gap-1 py-3" : "gap-1.5 py-2"
           )}
         >
           {primaryNavItems.map(({ href, label, icon }) => {
@@ -112,20 +112,24 @@ function SidebarNavItem({
       aria-current={active ? "page" : undefined}
       aria-busy={pending || undefined}
       className={cn(
-        "group relative flex min-h-11 select-none no-underline outline-none transition-colors duration-200 hover:no-underline focus-visible:ring-2 focus-visible:ring-sidebar-ring/50",
+        "group relative flex overflow-hidden select-none no-underline outline-none transition-colors duration-200 hover:no-underline focus-visible:ring-2 focus-visible:ring-sidebar-ring/50",
         collapsed
-          ? "mx-auto w-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5"
-          : "w-full flex-row items-center gap-3 rounded-xl px-3 py-2.5",
+          ? "min-h-11 w-full max-w-full min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5"
+          : "h-10 w-full max-w-full min-w-0 flex-row items-center gap-3 px-4 py-2",
         active
-          ? "text-primary"
-          : "text-primary/70 hover:bg-sidebar-accent/60 hover:text-primary",
+          ? "font-medium text-sidebar-foreground"
+          : "text-on-dark-soft hover:bg-sidebar-accent hover:text-sidebar-foreground",
         pending && "opacity-60"
       )}
     >
       {active && (
         <motion.div
-          layoutId={SIDEBAR_NAV_INDICATOR_ID}
-          className="absolute inset-0 rounded-xl bg-primary/10"
+          layoutId={
+            collapsed
+              ? SIDEBAR_NAV_INDICATOR_COLLAPSED
+              : SIDEBAR_NAV_INDICATOR_EXPANDED
+          }
+          className="absolute inset-y-0 left-0 right-0 border-l-2 border-sidebar-foreground bg-sidebar-active"
           transition={reducedMotion ? { duration: 0 } : indicatorTransition}
         />
       )}
