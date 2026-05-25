@@ -32,3 +32,15 @@ function subscribe(onStoreChange: () => void) {
 export function useColumnCount() {
   return useSyncExternalStore(subscribe, getColumnCount, () => 1);
 }
+
+/** Estimated VideoCard row height (content only) by breakpoint column count */
+export function getRowContentEstimate(columnCount: number): number {
+  switch (columnCount) {
+    case 1:
+      return 300;
+    case 2:
+      return 270;
+    default:
+      return 260;
+  }
+}

@@ -12,7 +12,7 @@ interface VideoCardProps {
 
 export function VideoCard({ video }: VideoCardProps) {
   return (
-    <article className="group flex flex-col gap-3 group relative" >
+    <article className="group relative flex flex-col gap-2">
       <NavLink
         href={`/watch/${video.id}`}
         className="relative block overflow-hidden rounded-lg"
@@ -68,7 +68,6 @@ export function VideoCard({ video }: VideoCardProps) {
           </p>
         </div>
       </div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-full w-full scale-0 bg-primary/20 -z-10 group-hover:scale-105 transition-all duration-300 rounded-lg"></div>
     </article>
   );
 }
