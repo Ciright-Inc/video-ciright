@@ -264,6 +264,22 @@ a {
   }
 }
 
+@keyframes navigation-progress {
+  0% {
+    transform: scaleX(0.08);
+  }
+  50% {
+    transform: scaleX(0.55);
+  }
+  100% {
+    transform: scaleX(0.92);
+  }
+}
+
+@utility animate-navigation-progress {
+  animation: navigation-progress 1.1s ease-in-out infinite;
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;

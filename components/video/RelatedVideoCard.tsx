@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { NavLink } from "@/components/layout/NavLink";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
@@ -60,7 +60,7 @@ function CardContent({
 
   return (
     <>
-      <Link
+      <NavLink
         href={`/watch/${video.id}`}
         className="relative block w-[168px] shrink-0 overflow-hidden rounded-[var(--radius-md)]"
       >
@@ -81,20 +81,20 @@ function CardContent({
             </span>
           )}
         </Thumb>
-      </Link>
+      </NavLink>
 
       <TextBlock className="relative min-w-0 flex-1 pr-6" {...textProps}>
-        <Link href={`/watch/${video.id}`}>
+        <NavLink href={`/watch/${video.id}`}>
           <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink transition-colors duration-300 group-hover:text-primary">
             {video.title}
           </h3>
-        </Link>
-        <Link
+        </NavLink>
+        <NavLink
           href={`/channel/${video.channel.id}`}
           className="mt-1 block truncate text-xs text-secondary-foreground transition-colors duration-300 hover:text-primary"
         >
           {video.channel.name}
-        </Link>
+        </NavLink>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {formatViews(video.views)} ·{" "}
           {formatDistanceToNow(new Date(contextDate ?? video.createdAt), {

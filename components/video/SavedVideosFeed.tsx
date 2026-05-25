@@ -1,0 +1,81 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { HistoryVideoSections } from "./HistoryVideoSections";
+import { RelatedVideoRowSkeleton } from "@/components/ui/skeleton";
+import { groupWatchHistory } from "@/lib/profile/historyGroups";
+import type { SavedVideosPage } from "@/lib/profile/savedVideosPage";
+import {
+  flattenSavedVideosPages,
+  useSavedVideosInfinite,
+} from "@/lib/queries/saved-videos";
+
+interface SavedVideosFeedProps {
+  initialPage: SavedVideosPage;
+}
+
+export function SavedVideosFeed({ initialPage }: SavedVideosFeedProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSavedVideosInfinite(initialPage);
+
+  const sections = useMemo(() => {
+    const rows = flattenSavedVideosPages(data?.pages).map((item) => ({
+      watchedAt: new Date(item.savedAt),
+      video: item.video,
+    }));
+    return groupWatchHistory(rows).map((section) => ({
+      label: section.label,
+      items: section.rows.map((row) => ({
+        video: row.video,
+        contextDate: row.watchedAt,
+        key: `${row.video.id}-${row.watchedAt.toISOString()}`,
+      })),
+    }));
+  }, [data?.pages]);
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          loadMore();
+        }
+      },
+      { rootMargin: "240px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  return (
+    <>
+      <HistoryVideoSections sections={sections} />
+      <div ref={sentinelRef} className="h-px w-full" aria-hidden />
+      {isFetchingNextPage ? (
+        <ul
+          className="mt-4 flex flex-col gap-4"
+          role="status"
+          aria-busy="true"
+          aria-label="Loading more saved videos"
+        >
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li key={i}>
+              <RelatedVideoRowSkeleton />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
+}

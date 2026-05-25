@@ -11,6 +11,9 @@ import {
   useMainScrollRef,
 } from "@/components/providers/MainScrollProvider";
 import { SessionExpiryWatcher } from "@/components/auth/SessionExpiryWatcher";
+import { NavigationPendingProvider } from "@/components/providers/NavigationPendingProvider";
+import { MainContentArea } from "@/components/layout/MainContentArea";
+import { NavigationProgressBar } from "@/components/layout/NavigationProgressBar";
 
 export function MainLayoutShell({ children }: { children: React.ReactNode }) {
   const scrollRef = useMainScrollRef();
@@ -18,24 +21,27 @@ export function MainLayoutShell({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <QueryProvider>
-        <SidebarProvider>
-          <MainScrollProvider scrollRef={scrollRef}>
-            <div className="flex h-dvh flex-col overflow-hidden">
-              <SessionExpiryWatcher />
-              <Topbar />
-              <div className="flex min-h-0 flex-1">
-                <Sidebar />
-                <main
-                  ref={scrollRef}
-                  className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 pb-24 md:pb-4"
-                >
-                  {children}
-                </main>
+        <NavigationPendingProvider>
+          <SidebarProvider>
+            <MainScrollProvider scrollRef={scrollRef}>
+              <div className="flex h-dvh flex-col overflow-hidden">
+                <SessionExpiryWatcher />
+                <NavigationProgressBar />
+                <Topbar />
+                <div className="flex min-h-0 flex-1">
+                  <Sidebar />
+                  <main
+                    ref={scrollRef}
+                    className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 pb-24 md:pb-4"
+                  >
+                    <MainContentArea>{children}</MainContentArea>
+                  </main>
+                </div>
+                <MobileNav />
               </div>
-              <MobileNav />
-            </div>
-          </MainScrollProvider>
-        </SidebarProvider>
+            </MainScrollProvider>
+          </SidebarProvider>
+        </NavigationPendingProvider>
       </QueryProvider>
     </SessionProvider>
   );

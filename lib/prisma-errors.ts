@@ -31,6 +31,10 @@ export function isMissingWatchHistoryTableError(error: unknown): boolean {
   return isMissingTableError(error, "watchhistory");
 }
 
+export function isMissingSavedVideoTableError(error: unknown): boolean {
+  return isMissingTableError(error, "savedvideo");
+}
+
 export function isMissingNotificationTableError(error: unknown): boolean {
   return isMissingTableError(error, "notification");
 }

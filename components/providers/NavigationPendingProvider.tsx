@@ -1,0 +1,88 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { usePathname } from "next/navigation";
+
+type NavigationPendingContextValue = {
+  pendingHref: string | null;
+  startNavigation: (href: string) => void;
+};
+
+const NavigationPendingContext =
+  createContext<NavigationPendingContextValue | null>(null);
+
+/** Normalizes app paths for comparison (pathname + optional search). */
+export function normalizeAppHref(href: string): string {
+  if (href.startsWith("http://") || href.startsWith("https://")) {
+    try {
+      const url = new URL(href);
+      return url.pathname + url.search;
+    } catch {
+      return href;
+    }
+  }
+  if (!href.startsWith("/")) {
+    return `/${href}`;
+  }
+  return href;
+}
+
+function pathnameOf(href: string): string {
+  return normalizeAppHref(href).split("?")[0] ?? href;
+}
+
+export function isNavigationPending(
+  pendingHref: string | null,
+  pathname: string
+): boolean {
+  if (!pendingHref) return false;
+  return pathnameOf(pendingHref) !== pathname;
+}
+
+export function NavigationPendingProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
+  const startNavigation = useCallback(
+    (href: string) => {
+      const target = normalizeAppHref(href);
+      if (pathnameOf(target) !== pathname) {
+        setPendingHref(target);
+      }
+    },
+    [pathname]
+  );
+
+  const value = useMemo(
+    () => ({ pendingHref, startNavigation }),
+    [pendingHref, startNavigation]
+  );
+
+  return (
+    <NavigationPendingContext.Provider value={value}>
+      {children}
+    </NavigationPendingContext.Provider>
+  );
+}
+
+export function useNavigationPending() {
+  const ctx = useContext(NavigationPendingContext);
+  if (!ctx) {
+    throw new Error(
+      "useNavigationPending must be used within NavigationPendingProvider"
+    );
+  }
+  return ctx;
+}

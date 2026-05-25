@@ -1,10 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NavLink } from "@/components/layout/NavLink";
+import {
+  isNavigationPending,
+  normalizeAppHref,
+  useNavigationPending,
+} from "@/components/providers/NavigationPendingProvider";
 import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import {
   BarChart3,
+  Bookmark,
   Clapperboard,
   History,
   LayoutDashboard,
@@ -33,6 +39,7 @@ const tabs: ProfileTab[] = [
   { href: "/profile/content", label: "Content", icon: Clapperboard },
   { href: "/profile/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/profile/history", label: "History", icon: History },
+  { href: "/profile/saved", label: "Saved", icon: Bookmark },
   { href: "/profile/channel", label: "Channel", icon: Tv },
 ];
 
@@ -83,11 +90,19 @@ function ProfileTabChip({
   reducedMotion: boolean | null;
 }) {
   const Icon = tab.icon;
+  const pathname = usePathname();
+  const { pendingHref } = useNavigationPending();
+  const pending =
+    !active &&
+    pendingHref !== null &&
+    isNavigationPending(pendingHref, pathname) &&
+    normalizeAppHref(pendingHref).split("?")[0] === tab.href;
 
   return (
-    <Link
+    <NavLink
       href={tab.href}
       aria-current={active ? "page" : undefined}
+      aria-busy={pending || undefined}
       title={tab.label}
       className={cn(
         "relative inline-flex shrink-0 snap-start items-center justify-center rounded-full no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
@@ -95,7 +110,8 @@ function ProfileTabChip({
         "text-sm font-medium",
         active
           ? "text-primary-foreground!"
-          : "bg-muted text-secondary-foreground hover:bg-surface-soft hover:text-primary"
+          : "bg-muted text-secondary-foreground hover:bg-surface-soft hover:text-primary",
+        pending && "opacity-70"
       )}
     >
       {active && (
@@ -120,6 +136,6 @@ function ProfileTabChip({
       >
         {tab.label}
       </span>
-    </Link>
+    </NavLink>
   );
 }

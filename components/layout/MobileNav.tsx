@@ -1,7 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NavLink } from "@/components/layout/NavLink";
+import {
+  isNavigationPending,
+  normalizeAppHref,
+  useNavigationPending,
+} from "@/components/providers/NavigationPendingProvider";
 import { motion, useReducedMotion } from "motion/react";
 import { Compass, History, Home, Layers, User, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -74,13 +79,23 @@ function NavItem({
   active: boolean;
   reducedMotion: boolean | null;
 }) {
+  const pathname = usePathname();
+  const { pendingHref } = useNavigationPending();
+  const pending =
+    !active &&
+    pendingHref !== null &&
+    isNavigationPending(pendingHref, pathname) &&
+    normalizeAppHref(pendingHref).split("?")[0] === href;
+
   return (
-    <Link
+    <NavLink
       href={href}
       aria-current={active ? "page" : undefined}
+      aria-busy={pending || undefined}
       className={cn(
         "relative flex min-h-11 w-16 flex-col items-center justify-center gap-1 px-2 py-1.5 no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        active ? "text-primary" : "text-primary/60 hover:text-primary"
+        active ? "text-primary" : "text-primary/60 hover:text-primary",
+        pending && "opacity-60"
       )}
     >
       {active && (
@@ -105,6 +120,6 @@ function NavItem({
       >
         {label}
       </span>
-    </Link>
+    </NavLink>
   );
 }

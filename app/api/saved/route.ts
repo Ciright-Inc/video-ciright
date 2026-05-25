@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSavedVideosPage } from "@/lib/profile/savedVideosPage";
+
+export async function GET(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
+  const result = await getSavedVideosPage(session.user.id, page);
+  return NextResponse.json(result);
+}
 
 export async function POST(request: Request) {
   const session = await auth();

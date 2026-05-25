@@ -1,6 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { NavLink } from "@/components/layout/NavLink";
+import {
+  isNavigationPending,
+  normalizeAppHref,
+  useNavigationPending,
+} from "@/components/providers/NavigationPendingProvider";
 import { usePathname } from "next/navigation";
 import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import type { LucideIcon } from "lucide-react";
@@ -93,10 +98,19 @@ function SidebarNavItem({
   collapsed: boolean;
   reducedMotion: boolean | null;
 }) {
+  const pathname = usePathname();
+  const { pendingHref } = useNavigationPending();
+  const pending =
+    !active &&
+    pendingHref !== null &&
+    isNavigationPending(pendingHref, pathname) &&
+    normalizeAppHref(pendingHref).split("?")[0] === href;
+
   return (
-    <Link
+    <NavLink
       href={href}
       aria-current={active ? "page" : undefined}
+      aria-busy={pending || undefined}
       className={cn(
         "group relative flex min-h-11 select-none no-underline outline-none transition-colors duration-200 hover:no-underline focus-visible:ring-2 focus-visible:ring-sidebar-ring/50",
         collapsed
@@ -104,7 +118,8 @@ function SidebarNavItem({
           : "w-full flex-row items-center gap-3 rounded-xl px-3 py-2.5",
         active
           ? "text-primary"
-          : "text-primary/70 hover:bg-sidebar-accent/60 hover:text-primary"
+          : "text-primary/70 hover:bg-sidebar-accent/60 hover:text-primary",
+        pending && "opacity-60"
       )}
     >
       {active && (
@@ -128,6 +143,6 @@ function SidebarNavItem({
       >
         {label}
       </span>
-    </Link>
+    </NavLink>
   );
 }

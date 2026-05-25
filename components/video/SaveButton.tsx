@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { savedVideosKeys } from "@/lib/queries/saved-videos";
 import { Bookmark } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
@@ -16,6 +18,7 @@ interface SaveButtonProps {
 export function SaveButton({ videoId, initialSaved }: SaveButtonProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const reducedMotion = useReducedMotion();
   const [saved, setSaved] = useState(initialSaved);
   const [loading, setLoading] = useState(false);
@@ -40,6 +43,7 @@ export function SaveButton({ videoId, initialSaved }: SaveButtonProps) {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setSaved(data.saved);
+      void queryClient.invalidateQueries({ queryKey: savedVideosKeys.all });
       toast.success(data.saved ? "Saved to your library" : "Removed from saved");
     } catch {
       setSaved(prev);

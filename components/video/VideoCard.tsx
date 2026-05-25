@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { NavLink } from "@/components/layout/NavLink";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar } from "@/components/ui/user-avatar";
@@ -13,7 +13,7 @@ interface VideoCardProps {
 export function VideoCard({ video }: VideoCardProps) {
   return (
     <article className="group flex flex-col gap-3 group relative" >
-      <Link
+      <NavLink
         href={`/watch/${video.id}`}
         className="relative block overflow-hidden rounded-lg"
       >
@@ -38,28 +38,28 @@ export function VideoCard({ video }: VideoCardProps) {
             </span>
           )}
         </div>
-      </Link>
+      </NavLink>
 
       <div className="flex gap-3">
-        <Link href={`/channel/${video.channel.id}`}>
+        <NavLink href={`/channel/${video.channel.id}`}>
           <Avatar
             src={video.channel.avatarUrl}
             name={video.channel.name}
             size="md"
           />
-        </Link>
+        </NavLink>
         <div className="min-w-0 flex-1">
-          <Link href={`/watch/${video.id}`}>
+          <NavLink href={`/watch/${video.id}`}>
             <h3 className="line-clamp-2 text-sm font-semibold text-ink group-hover:text-primary">
               {video.title}
             </h3>
-          </Link>
-          <Link
+          </NavLink>
+          <NavLink
             href={`/channel/${video.channel.id}`}
             className="mt-1 block text-sm text-secondary-foreground hover:text-primary"
           >
             {video.channel.name}
-          </Link>
+          </NavLink>
           <p className="text-xs text-muted-foreground">
             {formatViews(video.views)} ·{" "}
             {formatDistanceToNow(new Date(video.createdAt), {
