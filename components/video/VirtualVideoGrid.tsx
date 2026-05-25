@@ -33,8 +33,13 @@ export function VirtualVideoGrid({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
+    isPending,
+    isFetching,
+    isError,
+    refetch,
   } = useVideoFeedInfinite(feed, initialPage);
+
+  const isLoading = isPending && isFetching;
 
   const items = flattenVideoFeedPages(data?.pages);
 
@@ -46,6 +51,16 @@ export function VirtualVideoGrid({
 
   if (searchInactive) {
     return null;
+  }
+
+  if (isError && items.length === 0) {
+    return (
+      <VideoGridEmpty
+        title="Could not load videos"
+        description="Check your connection and try again."
+        action={{ label: "Retry", onClick: () => void refetch() }}
+      />
+    );
   }
 
   if (!isLoading && items.length === 0) {

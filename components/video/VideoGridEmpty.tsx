@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Film, Plus } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { pillCtaLinkClass } from "@/components/ui/button";
+import { Button, pillCtaLinkClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PREMIUM_SPRING_GENTLE, SMOOTH_EASE } from "./motion-presets";
 
@@ -35,7 +35,7 @@ const iconVariants = {
 export interface VideoGridEmptyProps {
   title?: string;
   description?: string;
-  action?: { label: string; href: string } | null;
+  action?: { label: string; href?: string; onClick?: () => void } | null;
 }
 
 export function VideoGridEmpty({
@@ -83,10 +83,21 @@ export function VideoGridEmpty({
         <h2 className="mb-2 text-xl font-semibold text-ink">{title}</h2>
         <p className="max-w-sm text-sm leading-relaxed text-secondary-foreground">{description}</p>
         {action ? (
-          <Link href={action.href} className={cn(pillCtaLinkClass, "mt-6")}>
-            <Plus className="size-4 text-primary" aria-hidden />
-            {action.label}
-          </Link>
+          action.onClick ? (
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(pillCtaLinkClass, "mt-6")}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </Button>
+          ) : action.href ? (
+            <Link href={action.href} className={cn(pillCtaLinkClass, "mt-6")}>
+              <Plus className="size-4 text-primary" aria-hidden />
+              {action.label}
+            </Link>
+          ) : null
         ) : null}
       </div>
     </motion.div>

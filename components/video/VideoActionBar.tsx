@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { LikeButtons } from "./LikeButtons";
+import { SaveButton } from "./SaveButton";
 import { ShareMenu } from "./ShareMenu";
 
 interface VideoActionBarProps {
@@ -11,6 +12,7 @@ interface VideoActionBarProps {
   likeCount: number;
   dislikeCount: number;
   userLikeValue: number;
+  initialSaved: boolean;
 }
 
 export function VideoActionBar({
@@ -19,6 +21,7 @@ export function VideoActionBar({
   likeCount,
   dislikeCount,
   userLikeValue,
+  initialSaved,
 }: VideoActionBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -29,7 +32,7 @@ export function VideoActionBar({
         initialUserValue={userLikeValue}
       />
       <ShareMenu videoId={videoId} title={title} />
-      <ActionPill label="Save" icon={<SaveIcon />} />
+      <SaveButton videoId={videoId} initialSaved={initialSaved} />
       <ActionPill label="More actions" icon={<MoreIcon />} iconOnly />
     </div>
   );
@@ -71,19 +74,6 @@ function ActionPill({
         </>
       )}
     </button>
-  );
-}
-
-function SaveIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-      />
-    </svg>
   );
 }
 

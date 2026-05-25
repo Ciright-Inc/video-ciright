@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useMainScrollVirtualizer } from "@/hooks/use-main-scroll-virtualizer";
 import { useColumnCount } from "@/hooks/use-column-count";
+import { useIsMounted } from "@/hooks/use-is-mounted";
+import { useMainScrollElement } from "@/components/providers/MainScrollProvider";
 
 /** gap-y-8 (32px) is applied between virtual rows, not inside each row grid */
 const ROW_GAP_PX = 32;
@@ -32,6 +34,8 @@ export function VirtualGrid<T>({
   hasMore,
   isLoadingMore,
 }: VirtualGridProps<T>) {
+  const mounted = useIsMounted();
+  const scrollRef = useMainScrollElement();
   const responsiveColumnCount = useColumnCount();
   const columnCount = columnCountProp ?? responsiveColumnCount;
   const rowCount = Math.ceil(items.length / columnCount) || 0;
@@ -47,6 +51,18 @@ export function VirtualGrid<T>({
   const virtualRows = rowVirtualizer.getVirtualItems();
   const lastVirtualRowIndex = virtualRows.at(-1)?.index;
 
+  useLayoutEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+
+    rowVirtualizer.measure();
+    const observer = new ResizeObserver(() => {
+      rowVirtualizer.measure();
+    });
+    observer.observe(scrollEl);
+    return () => observer.disconnect();
+  }, [scrollRef, rowVirtualizer, rowCount, columnCount]);
+
   useEffect(() => {
     if (
       lastVirtualRowIndex == null ||
@@ -60,6 +76,25 @@ export function VirtualGrid<T>({
       onNearEnd();
     }
   }, [lastVirtualRowIndex, rowCount, onNearEnd, hasMore, isLoadingMore]);
+
+  const useStaticGrid =
+    !mounted || (items.length > 0 && virtualRows.length === 0);
+
+  if (useStaticGrid) {
+    return (
+      <div
+        className={`grid w-full ${gapXClassName}`}
+        style={{
+          gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+          rowGap: ROW_GAP_PX,
+        }}
+      >
+        {items.map((item) => (
+          <div key={getItemKey(item)}>{renderItem(item)}</div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div

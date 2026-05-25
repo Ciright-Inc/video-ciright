@@ -24,6 +24,7 @@ model User {
   likes         Like[]
   subscriptions Subscription[] @relation("subscriber")
   watchHistory  WatchHistory[]
+  savedVideos   SavedVideo[]
   commentLikes  CommentLike[]
   notificationsReceived Notification[] @relation("notificationRecipient")
   notificationsAsActor    Notification[] @relation("notificationLatestActor")
@@ -124,6 +125,7 @@ model Video {
   likes    Like[]
   tags     VideoTag[]
   watchedBy WatchHistory[]
+  savedBy   SavedVideo[]
   notifications Notification[]
 
   isLive    Boolean @default(false)
@@ -141,6 +143,19 @@ model WatchHistory {
 
   @@unique([userId, videoId])
   @@index([userId, watchedAt])
+}
+
+model SavedVideo {
+  id      String   @id @default(cuid())
+  userId  String
+  videoId String
+  savedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId, savedAt])
 }
 
 enum VideoStatus {

@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { formatViews } from "@/lib/format";
 import { Avatar } from "@/components/ui/user-avatar";
 import { SubscribeButton } from "@/components/channel/SubscribeButton";
+import { Badge } from "@/components/ui/badge";
 import { VideoActionBar } from "@/components/video/VideoActionBar";
 
 interface VideoInfoProps {
@@ -24,8 +25,10 @@ interface VideoInfoProps {
   likeCount: number;
   dislikeCount: number;
   userLikeValue: number;
+  isSaved: boolean;
   isSubscribed: boolean;
   isOwner: boolean;
+  tags?: string[];
 }
 
 export function VideoInfo({
@@ -38,8 +41,10 @@ export function VideoInfo({
   likeCount,
   dislikeCount,
   userLikeValue,
+  isSaved,
   isSubscribed,
   isOwner,
+  tags = [],
 }: VideoInfoProps) {
   const [expanded, setExpanded] = useState(false);
   const uploadedAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
@@ -79,6 +84,7 @@ export function VideoInfo({
           likeCount={likeCount}
           dislikeCount={dislikeCount}
           userLikeValue={userLikeValue}
+          initialSaved={isSaved}
         />
       </div>
 
@@ -115,6 +121,25 @@ export function VideoInfo({
           </button>
         )}
       </div>
+
+      {tags.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <Link
+              key={tag}
+              href={`/search?q=${encodeURIComponent(tag)}`}
+              className="shrink-0"
+            >
+              <Badge
+                variant="secondary"
+                className="bg-primary/10 text-primary hover:bg-primary/15"
+              >
+                {tag}
+              </Badge>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

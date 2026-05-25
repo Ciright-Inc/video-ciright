@@ -4,6 +4,7 @@ import { getVideoById, getRelatedVideos } from "@/lib/data/videos";
 import { getCommentsByVideoId } from "@/lib/data/comments";
 import { getVideoLikeStats, getUserLikeValue } from "@/lib/data/likes";
 import { isSubscribed } from "@/lib/data/channels";
+import { isVideoSaved } from "@/lib/data/saved-videos";
 import { WatchPlayerSection } from "@/components/video/WatchPlayerSection";
 import { VideoInfo } from "@/components/video/VideoInfo";
 import { RelatedVideoList } from "@/components/video/RelatedVideoList";
@@ -36,6 +37,10 @@ export default async function WatchPage({ params }: WatchPageProps) {
     ? await isSubscribed(session.user.id, video.channelId)
     : false;
 
+  const saved = session?.user?.id
+    ? await isVideoSaved(session.user.id, videoId)
+    : false;
+
   const isOwner = session?.user?.channelId === video.channelId;
 
   if (session?.user?.id) {
@@ -64,8 +69,10 @@ export default async function WatchPage({ params }: WatchPageProps) {
             likeCount={likeStats.likeCount}
             dislikeCount={likeStats.dislikeCount}
             userLikeValue={userLikeValue}
+            isSaved={saved}
             isSubscribed={subscribed}
             isOwner={isOwner}
+            tags={video.tags.map(({ tag }) => tag.name)}
           />
           <CommentsSection videoId={videoId} comments={comments} />
         </div>

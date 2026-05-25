@@ -77,8 +77,10 @@ export function useVideoFeedInfinite(
             pages: [initialPage],
             pageParams: [undefined],
           },
+          initialDataUpdatedAt: Date.now(),
         }
       : {}),
+    placeholderData: (previousData) => previousData,
   });
 }
 
