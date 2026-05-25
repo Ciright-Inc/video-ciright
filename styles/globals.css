@@ -60,8 +60,8 @@
   --color-accent-foreground: var(--color-ink);
   --color-destructive: var(--color-error);
   --color-destructive-foreground: var(--color-on-dark);
-  --color-border: var(--color-hairline);
-  --color-input: var(--color-hairline);
+  --color-border: var(--color-hairline-strong);
+  --color-input: var(--color-hairline-strong);
   --color-ring: var(--color-primary);
   --radius: var(--radius-md);
   --font-heading: var(--font-sans);
@@ -192,8 +192,8 @@ a {
   --toast-info-bg: color-mix(in srgb, var(--color-primary) 8%, var(--color-canvas));
   --toast-info-border: color-mix(in srgb, var(--color-primary) 22%, var(--color-canvas));
   --toast-info-text: var(--color-primary);
-  --border: var(--color-hairline);
-  --input: var(--color-hairline);
+  --border: var(--color-hairline-strong);
+  --input: var(--color-hairline-strong);
   --ring: var(--color-primary);
   --sidebar: var(--color-canvas-soft);
   --sidebar-foreground: var(--color-primary);
@@ -201,7 +201,7 @@ a {
   --sidebar-primary-foreground: var(--color-on-primary);
   --sidebar-accent: var(--color-surface-soft);
   --sidebar-accent-foreground: var(--color-primary);
-  --sidebar-border: var(--color-hairline);
+  --sidebar-border: var(--color-hairline-strong);
   --sidebar-ring: var(--color-primary);
 }
 

@@ -20,8 +20,8 @@ export const keyraTheme: Theme = {
     surfaceDark: "#171717",
     surfaceDarkElevated: "#262626",
 
-    gradientSkyLight: "#ffffff",
-    gradientSkyMid: "#fafafa",
+    gradientSkyLight: "#f0f0f3",
+    gradientSkyMid: "#e2e4e8",
 
     hairline: "#f0f0f3",
     hairlineSoft: "#f5f5f7",

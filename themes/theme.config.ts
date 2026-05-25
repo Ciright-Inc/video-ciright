@@ -4,7 +4,7 @@ import { youtubeTheme } from "./youtube.theme";
 
 export type ThemeKey = "ciright" | "keyra" | "youtube";
 
-export const activeTheme: ThemeKey = "ciright";
+export const activeTheme: ThemeKey = "keyra";
 
 export const themes = {
   ciright: cirightTheme,

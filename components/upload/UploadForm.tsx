@@ -831,7 +831,7 @@ export function UploadForm() {
           >
             <div
               className={cn(
-                "group/preview relative aspect-video w-full overflow-hidden rounded-t-xl bg-surface-dark",
+                "group/preview relative aspect-video w-full overflow-hidden rounded-t-xl bg-surface-strong",
                 !useExternalUrl && "cursor-pointer"
               )}
               onClick={() => {
@@ -873,16 +873,11 @@ export function UploadForm() {
                   onPause={() => setIsPreviewPlaying(false)}
                   onEnded={() => setIsPreviewPlaying(false)}
                 />
-              ) : (
-                <div
-                  className="absolute inset-0 bg-linear-to-br from-(--color-gradient-sky-light) to-(--color-gradient-sky-mid)"
-                  aria-hidden
-                />
-              )}
+              ) : null}
               {(!videoPreviewUrl || !isPreviewPlaying) && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="flex size-16 items-center justify-center rounded-full border border-white/40 bg-white/20 backdrop-blur-md transition-transform group-hover/preview:scale-105">
-                    <CirclePlayIcon className="text-white" />
+                  <div className="flex size-16 items-center justify-center rounded-full border border-hairline-strong bg-card shadow-sm transition-transform group-hover/preview:scale-105">
+                    <CirclePlayIcon className="size-8 text-ink" />
                   </div>
                 </div>
               )}
