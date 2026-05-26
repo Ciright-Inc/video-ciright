@@ -68,6 +68,10 @@ export function VideoCard({ video }: VideoCardProps) {
           </p>
         </div>
       </div>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-full w-full -translate-x-1/2 -translate-y-1/2 scale-0 rounded-lg bg-primary/20 transition-all duration-300 group-hover:scale-105"
+      />
     </article>
   );
 }
