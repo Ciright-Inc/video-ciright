@@ -1,4 +1,5 @@
 import { AuthFormPanel } from "@/components/auth/AuthFormPanel";
+import { productName } from "@/themes/theme.config";
 import RegisterForm from "./RegisterForm";
 
 export default function RegisterPage() {
@@ -7,7 +8,7 @@ export default function RegisterPage() {
       title="Create account"
       subtitle={
         <>
-          Join <span className="font-semibold text-primary">Ciright Video</span> today
+          Join <span className="font-semibold text-primary">{productName}</span> today
         </>
       }
     >

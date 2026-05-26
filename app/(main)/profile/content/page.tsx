@@ -15,11 +15,13 @@ export default async function ProfileContentPage() {
     select: {
       id: true,
       title: true,
+      description: true,
       thumbnailUrl: true,
       views: true,
       visibility: true,
       status: true,
       createdAt: true,
+      tags: { select: { tag: { select: { name: true } } } },
     },
   });
 
@@ -27,9 +29,14 @@ export default async function ProfileContentPage() {
     <div>
       <h2 className="mb-2 text-lg font-semibold text-ink">Your videos</h2>
       <p className="mb-6 text-sm text-secondary-foreground">
-        Edit titles, visibility, or remove videos from your channel.
+        Edit metadata, visibility, thumbnails, or remove videos from your channel.
       </p>
-      <StudioTable videos={videos} />
+      <StudioTable
+        videos={videos.map((video) => ({
+          ...video,
+          tags: video.tags.map((t) => t.tag.name),
+        }))}
+      />
     </div>
   );
 }

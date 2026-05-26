@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useObjectUrl } from "@/hooks/use-object-url";
 import { createId } from "@paralleldrive/cuid2";
 import {
   CirclePlayIcon,
@@ -82,7 +84,7 @@ export function UploadForm() {
   const [tags, setTags] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const videoPreviewUrl = useObjectUrl(videoFile);
   const [useExternalUrl, setUseExternalUrl] = useState(false);
   const [videoUrl, setVideoUrl] = useState(SAMPLE_VIDEO_URL);
   const [customThumbnailFile, setCustomThumbnailFile] = useState<File | null>(
@@ -117,6 +119,7 @@ export function UploadForm() {
         useExternalUrl?: boolean;
         videoUrl?: string;
       };
+      /* eslint-disable react-hooks/set-state-in-effect -- hydrate upload draft after mount */
       if (draft.title) setTitle(draft.title);
       if (draft.description) setDescription(draft.description);
       if (draft.visibility) setVisibility(draft.visibility);
@@ -132,21 +135,11 @@ export function UploadForm() {
       }
       if (draft.useExternalUrl) setUseExternalUrl(draft.useExternalUrl);
       if (draft.videoUrl) setVideoUrl(draft.videoUrl);
+      /* eslint-enable react-hooks/set-state-in-effect */
     } catch {
       /* ignore corrupt draft */
     }
   }, []);
-
-  useEffect(() => {
-    if (!videoFile) {
-      setVideoPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(videoFile);
-    setVideoPreviewUrl(url);
-    setIsPreviewPlaying(false);
-    return () => URL.revokeObjectURL(url);
-  }, [videoFile]);
 
   function togglePreviewPlayback() {
     const video = videoPreviewRef.current;
@@ -209,6 +202,7 @@ export function UploadForm() {
       return;
     }
     setError("");
+    setIsPreviewPlaying(false);
     setVideoFile(file);
     void probeVideoDuration(file).then(setVideoDuration);
     await generateThumbnailFromVideo(file);
@@ -996,10 +990,12 @@ export function UploadForm() {
                     </div>
                   ) : thumbnailPreviewUrl ? (
                     <>
-                      <img
+                      <Image
                         src={thumbnailPreviewUrl}
                         alt="Video thumbnail preview"
-                        className="size-full object-cover"
+                        fill
+                        unoptimized
+                        className="object-cover"
                       />
                       <div className="absolute right-2 bottom-2 flex gap-2">
                         <Button

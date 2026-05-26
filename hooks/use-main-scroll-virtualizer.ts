@@ -17,6 +17,7 @@ export function useMainScrollVirtualizer<TItemElement extends Element>(
 ) {
   const scrollRef = useMainScrollElement();
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- expected library limitation
   return useVirtualizer<HTMLElement, TItemElement>({
     ...options,
     getScrollElement: () => scrollRef.current,

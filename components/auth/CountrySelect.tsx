@@ -82,18 +82,18 @@ export function CountrySelect({
     () => new Map(options.map((o) => [o.code, o.label])),
     [options]
   );
+  const closedInputValue = value ? (labelByCode.get(value) ?? "") : "";
+  const comboboxInputValue = menuOpen ? inputValue : closedInputValue;
   const filteredCodes = useMemo(
     () =>
-      filterCountryCodes(codes, labelByCode, inputValue).slice(0, MAX_VISIBLE),
-    [codes, labelByCode, inputValue]
+      filterCountryCodes(codes, labelByCode, comboboxInputValue).slice(
+        0,
+        MAX_VISIBLE
+      ),
+    [codes, labelByCode, comboboxInputValue]
   );
-  const trimmedQuery = inputValue.trim();
+  const trimmedQuery = comboboxInputValue.trim();
   const showList = trimmedQuery.length > 0;
-
-  useEffect(() => {
-    if (menuOpen) return;
-    setInputValue(value ? (labelByCode.get(value) ?? "") : "");
-  }, [value, labelByCode, menuOpen]);
 
   useEffect(() => {
     const el = inputGroupRef.current;
@@ -130,8 +130,10 @@ export function CountrySelect({
           onChange(code);
           setInputValue(labelByCode.get(code) ?? "");
         }}
-        inputValue={inputValue}
-        onInputValueChange={setInputValue}
+        inputValue={comboboxInputValue}
+        onInputValueChange={(next) => {
+          if (menuOpen) setInputValue(next);
+        }}
         itemToStringLabel={(code) => labelByCode.get(code) ?? code}
         open={menuOpen}
         onOpenChange={(open) => {

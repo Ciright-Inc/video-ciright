@@ -1,6 +1,7 @@
 import { BellIcon, PlayIcon, SparklesIcon, ThumbsUpIcon } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
+import { productName } from "@/themes/theme.config";
 
 function AuthBrandHeader({ className }: { className?: string }) {
   return (
@@ -15,7 +16,7 @@ function AuthBrandHeader({ className }: { className?: string }) {
           <Logo size={30} />
         </span>
         <span className="truncate text-lg font-bold tracking-tight text-ink lg:text-inherit">
-          Ciright Video
+          {productName}
         </span>
       </div>
       <span className="hidden shrink-0 rounded-full border border-primary/12 bg-primary/6 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-primary uppercase backdrop-blur sm:inline lg:border-white/15 lg:bg-white/10 lg:text-white/70">

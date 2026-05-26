@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { videoListSelect } from "@/lib/data/videos";
 import { getSavedVideosPage } from "@/lib/profile/savedVideosPage";
 
 export async function GET(request: Request) {
@@ -50,11 +51,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ saved: false });
     }
 
-    await prisma.savedVideo.create({
+    const created = await prisma.savedVideo.create({
       data: { userId, videoId },
+      include: { video: { select: videoListSelect } },
     });
 
-    return NextResponse.json({ saved: true });
+    return NextResponse.json({
+      saved: true,
+      entry: {
+        savedAt: created.savedAt.toISOString(),
+        video: created.video,
+      },
+    });
   } catch {
     return NextResponse.json({ error: "Failed to update save" }, { status: 500 });
   }

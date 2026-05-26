@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { productName } from "@/themes/theme.config";
 
 type AuthPageShellProps = {
   children: React.ReactNode;
@@ -25,7 +26,7 @@ export function AuthPageShell({ children }: AuthPageShellProps) {
       </div>
 
       <footer className="absolute inset-x-6 bottom-5 z-20 hidden flex-wrap items-center justify-between gap-3 text-xs text-white/70 lg:flex">
-        <span>© {new Date().getFullYear()} Ciright Video</span>
+        <span>© {new Date().getFullYear()} {productName}</span>
         <nav className="flex flex-wrap gap-4" aria-label="Footer">
           <Link href="/" className="font-medium text-white/85 transition hover:text-white">
             Home

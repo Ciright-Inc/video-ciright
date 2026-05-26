@@ -2,6 +2,7 @@ import type { Theme } from "./theme.types";
 
 export const youtubeTheme: Theme = {
   name: "YouTube Dark",
+  productName: "YouTube",
 
   colors: {
     primary: "#ff0000",

@@ -1,8 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { patchProfileChannelCache } from "@/lib/queries/profile-cache";
+import Image from "next/image";
+import { FormEvent, useRef, useState } from "react";
+import { useObjectUrl } from "@/hooks/use-object-url";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,7 +66,7 @@ export function ChannelForm({
   channelId: string;
   initial: ChannelFormInitial;
 }) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const { update } = useSession();
   const [name, setName] = useState(initial.name);
   const [handle, setHandle] = useState(initial.handle);
@@ -72,8 +75,14 @@ export function ChannelForm({
   const [bannerUrl, setBannerUrl] = useState(initial.bannerUrl ?? "");
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState(initial.avatarUrl ?? "");
-  const [bannerPreview, setBannerPreview] = useState(initial.bannerUrl ?? "");
+  const avatarObjectUrl = useObjectUrl(pendingAvatarFile);
+  const bannerObjectUrl = useObjectUrl(pendingBannerFile);
+  const avatarPreview = pendingAvatarFile
+    ? (avatarObjectUrl ?? "")
+    : avatarUrl;
+  const bannerPreview = pendingBannerFile
+    ? (bannerObjectUrl ?? "")
+    : bannerUrl;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const bannerUploadRef = useRef<HTMLInputElement>(null);
@@ -85,26 +94,6 @@ export function ChannelForm({
     description.trim() !== (initial.description ?? "") ||
     pendingAvatarFile !== null ||
     pendingBannerFile !== null;
-
-  useEffect(() => {
-    if (!pendingAvatarFile) {
-      setAvatarPreview(avatarUrl);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(pendingAvatarFile);
-    setAvatarPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [pendingAvatarFile, avatarUrl]);
-
-  useEffect(() => {
-    if (!pendingBannerFile) {
-      setBannerPreview(bannerUrl);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(pendingBannerFile);
-    setBannerPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [pendingBannerFile, bannerUrl]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -141,9 +130,15 @@ export function ChannelForm({
       setBannerUrl(nextBannerUrl ?? "");
       setPendingAvatarFile(null);
       setPendingBannerFile(null);
+      patchProfileChannelCache(queryClient, {
+        name: name.trim(),
+        handle: handle.trim(),
+        description: description.trim() || null,
+        avatarUrl: nextAvatarUrl,
+        bannerUrl: nextBannerUrl,
+      });
       await update();
       toast.success("Channel settings saved");
-      router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Save failed";
       setError(message);
@@ -213,10 +208,12 @@ export function ChannelForm({
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="relative h-32 w-full bg-muted sm:h-48">
             {bannerPreview ? (
-              <img
+              <Image
                 src={bannerPreview}
                 alt="Banner preview"
-                className="h-full w-full object-cover"
+                fill
+                unoptimized
+                className="object-cover"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-secondary-foreground">
@@ -225,9 +222,12 @@ export function ChannelForm({
             )}
             <div className="absolute -bottom-12 left-6 rounded-full border-4 border-card bg-muted shadow-sm">
               {avatarPreview ? (
-                <img
+                <Image
                   src={avatarPreview}
                   alt="Avatar preview"
+                  width={96}
+                  height={96}
+                  unoptimized
                   className="size-24 rounded-full object-cover"
                 />
               ) : (

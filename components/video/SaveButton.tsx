@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { savedVideosKeys } from "@/lib/queries/saved-videos";
+import { patchSavedVideosCache } from "@/lib/queries/profile-cache";
+import type { SavedVideoEntry } from "@/lib/profile/savedVideosPage";
 import { Bookmark } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
@@ -41,9 +42,16 @@ export function SaveButton({ videoId, initialSaved }: SaveButtonProps) {
         body: JSON.stringify({ videoId }),
       });
       if (!res.ok) throw new Error();
-      const data = await res.json();
+      const data = (await res.json()) as {
+        saved: boolean;
+        entry?: SavedVideoEntry;
+      };
       setSaved(data.saved);
-      void queryClient.invalidateQueries({ queryKey: savedVideosKeys.all });
+      if (data.saved && data.entry) {
+        patchSavedVideosCache(queryClient, { type: "add", entry: data.entry });
+      } else {
+        patchSavedVideosCache(queryClient, { type: "remove", videoId });
+      }
       toast.success(data.saved ? "Saved to your library" : "Removed from saved");
     } catch {
       setSaved(prev);

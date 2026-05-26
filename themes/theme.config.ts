@@ -13,3 +13,5 @@ export const themes = {
 } as const;
 
 export const theme = themes[activeTheme];
+
+export const productName = theme.productName;

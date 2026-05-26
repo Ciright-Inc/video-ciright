@@ -10,11 +10,11 @@ import {
   useSavedVideosInfinite,
 } from "@/lib/queries/saved-videos";
 
-interface SavedVideosFeedProps {
-  initialPage: SavedVideosPage;
-}
-
-export function SavedVideosFeed({ initialPage }: SavedVideosFeedProps) {
+export function SavedVideosFeed({
+  initialPage,
+}: {
+  initialPage?: SavedVideosPage;
+}) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =

@@ -18,10 +18,11 @@ export function SearchForm({ defaultQuery = "" }: SearchFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(defaultQuery);
-
-  useEffect(() => {
+  const [prevDefaultQuery, setPrevDefaultQuery] = useState(defaultQuery);
+  if (defaultQuery !== prevDefaultQuery) {
+    setPrevDefaultQuery(defaultQuery);
     setQuery(defaultQuery);
-  }, [defaultQuery]);
+  }
 
   useEffect(() => {
     if (searchParams.get("focus") === "1") {

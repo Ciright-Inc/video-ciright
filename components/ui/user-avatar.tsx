@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Avatar as AvatarRoot,
   AvatarFallback,
@@ -39,11 +39,6 @@ export function Avatar({
   className,
 }: UserAvatarProps) {
   const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    setImageError(false);
-  }, [src]);
-
   const showImage = Boolean(src) && !imageError;
   const letter = getAvatarLetter(name);
   const { bg, text } = getAvatarColor(name);
@@ -55,6 +50,7 @@ export function Avatar({
     >
       {showImage ? (
         <AvatarImage
+          key={src}
           src={src!}
           alt={name ?? "Avatar"}
           onError={() => setImageError(true)}

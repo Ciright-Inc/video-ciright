@@ -1,5 +1,5 @@
-import { RouteLoadingFallback } from "@/components/layout/RouteLoadingFallback";
+import { MainSegmentLoading } from "@/components/layout/MainSegmentLoading";
 
 export default function MainLoading() {
-  return <RouteLoadingFallback href="/" />;
+  return <MainSegmentLoading />;
 }

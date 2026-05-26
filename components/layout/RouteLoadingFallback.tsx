@@ -108,10 +108,69 @@ function UploadPageSkeleton() {
       aria-label="Loading upload"
     >
       <span className="sr-only">Loading upload…</span>
-      <Skeleton className="mb-6 h-8 w-40" />
-      <Skeleton className="aspect-video w-full max-w-2xl rounded-lg" />
-      <Skeleton className="mt-6 h-10 w-full max-w-xl" />
-      <Skeleton className="mt-4 h-24 w-full max-w-xl" />
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-8 w-48 md:h-10 md:w-56" />
+            <Skeleton className="h-4 w-full max-w-md" />
+          </div>
+          <div className="flex shrink-0 gap-3">
+            <Skeleton className="h-10 w-28 rounded-full" />
+            <Skeleton className="h-10 w-32 rounded-full" />
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-6">
+          <div className="flex flex-col gap-6 lg:col-span-7">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="border-b border-border px-6 py-4">
+                <Skeleton className="h-5 w-20" />
+              </div>
+              <div className="flex flex-col gap-6 p-6">
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-11 w-full" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="min-h-[140px] w-full rounded-md" />
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="px-6 py-4">
+                <Skeleton className="h-5 w-44" />
+              </div>
+              <div className="flex flex-col gap-6 px-6 pb-6">
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-11 w-full" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-11 w-full" />
+                </div>
+              </div>
+            </div>
+
+            <Skeleton className="h-20 w-full rounded-xl" />
+          </div>
+
+          <div className="flex flex-col gap-6 lg:col-span-5">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <Skeleton className="aspect-video w-full rounded-none rounded-t-xl" />
+              <div className="flex flex-col gap-6 p-6">
+                <Skeleton className="h-24 w-full rounded-xl" />
+                <div className="flex flex-col gap-3">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="aspect-video w-full rounded-xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
