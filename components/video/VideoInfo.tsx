@@ -3,11 +3,54 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { Hash } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { formatViews } from "@/lib/format";
 import { Avatar } from "@/components/ui/user-avatar";
 import { SubscribeButton } from "@/components/channel/SubscribeButton";
-import { Badge } from "@/components/ui/badge";
 import { VideoActionBar } from "@/components/video/VideoActionBar";
+import { cn } from "@/lib/utils";
+import {
+  PREMIUM_EASE,
+  PREMIUM_SPRING_HOVER,
+  PREMIUM_SPRING_PRESS,
+} from "@/components/video/motion-presets";
+
+const tagListVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.045, delayChildren: 0.06 },
+  },
+};
+
+const tagItemVariants = {
+  hidden: { opacity: 0, y: 10, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.38, ease: PREMIUM_EASE },
+  },
+};
+
+const tagPressVariants = {
+  hover: {
+    scale: 1.03,
+    transition: PREMIUM_SPRING_HOVER,
+  },
+  tap: {
+    scale: 0.97,
+    transition: PREMIUM_SPRING_PRESS,
+  },
+};
+
+const tagChipClassName = cn(
+  "group inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-pill border border-border/80 bg-surface-soft px-3 py-1.5",
+  "text-sm font-medium text-secondary-foreground shadow-sm",
+  "transition-[border-color,background-color,color,box-shadow] duration-200",
+  "hover:border-primary/35 hover:bg-primary/10 hover:text-primary hover:shadow-md",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+);
 
 interface VideoInfoProps {
   videoId: string;
@@ -47,6 +90,7 @@ export function VideoInfo({
   tags = [],
 }: VideoInfoProps) {
   const [expanded, setExpanded] = useState(false);
+  const reducedMotion = useReducedMotion();
   const uploadedAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
   const showToggle = description && description.length > 120;
 
@@ -123,22 +167,64 @@ export function VideoInfo({
       </div>
 
       {tags.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <Link
-              key={tag}
-              href={`/search?q=${encodeURIComponent(tag)}`}
-              className="shrink-0"
+        <nav
+          className="mt-3 border-t border-hairline/60 pt-3"
+          aria-label="Video topics"
+        >
+          {reducedMotion ? (
+            <ul className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <li key={tag} className="max-w-full">
+                  <Link
+                    href={`/search?q=${encodeURIComponent(tag)}`}
+                    className={tagChipClassName}
+                    aria-label={`Search for ${tag}`}
+                  >
+                    <Hash
+                      className="size-3.5 shrink-0 opacity-60"
+                      aria-hidden
+                    />
+                    <span className="truncate">{tag}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <motion.ul
+              className="flex flex-wrap gap-2"
+              variants={tagListVariants}
+              initial="hidden"
+              animate="visible"
             >
-              <Badge
-                variant="secondary"
-                className="bg-primary/10 text-primary hover:bg-primary/15"
-              >
-                {tag}
-              </Badge>
-            </Link>
-          ))}
-        </div>
+              {tags.map((tag) => (
+                <motion.li
+                  key={tag}
+                  variants={tagItemVariants}
+                  className="max-w-full"
+                >
+                  <motion.div
+                    variants={tagPressVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    className="inline-flex max-w-full"
+                  >
+                    <Link
+                      href={`/search?q=${encodeURIComponent(tag)}`}
+                      className={tagChipClassName}
+                      aria-label={`Search for ${tag}`}
+                    >
+                      <Hash
+                        className="size-3.5 shrink-0 opacity-60 transition-opacity group-hover:opacity-100"
+                        aria-hidden
+                      />
+                      <span className="truncate">{tag}</span>
+                    </Link>
+                  </motion.div>
+                </motion.li>
+              ))}
+            </motion.ul>
+          )}
+        </nav>
       )}
     </section>
   );

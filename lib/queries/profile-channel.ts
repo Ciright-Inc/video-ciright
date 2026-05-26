@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchProfileChannel } from "@/lib/api/profile-channel";
 import type { ProfileChannelData } from "@/lib/profile/channelProfileData";
+import { INITIAL_DATA_UPDATED_AT } from "@/lib/queries/initial-data-timestamp";
 import { profileQueryOptions } from "@/lib/queries/profile-query-options";
 
 export const profileChannelKeys = {
@@ -15,7 +16,7 @@ export function useProfileChannel(initialData?: ProfileChannelData) {
     queryFn: fetchProfileChannel,
     ...profileQueryOptions,
     ...(initialData
-      ? { initialData, initialDataUpdatedAt: Date.now() }
+      ? { initialData, initialDataUpdatedAt: INITIAL_DATA_UPDATED_AT }
       : {}),
     placeholderData: (previousData) => previousData,
   });

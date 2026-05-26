@@ -99,7 +99,8 @@ function useSlidingTabIndicator(
   }, [activeHref, navRef, tabRefs]);
 
   useLayoutEffect(() => {
-    measure();
+    const frame = requestAnimationFrame(() => measure());
+    return () => cancelAnimationFrame(frame);
   }, [measure]);
 
   useLayoutEffect(() => {

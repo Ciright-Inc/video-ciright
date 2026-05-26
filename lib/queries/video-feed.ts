@@ -8,6 +8,7 @@ import {
   fetchSubscriptionFeedPage,
   type VideoFeedPage,
 } from "@/lib/api/video-feed";
+import { INITIAL_DATA_UPDATED_AT } from "@/lib/queries/initial-data-timestamp";
 
 export type VideoFeedSource =
   | { type: "public" }
@@ -77,7 +78,7 @@ export function useVideoFeedInfinite(
             pages: [initialPage],
             pageParams: [undefined],
           },
-          initialDataUpdatedAt: Date.now(),
+          initialDataUpdatedAt: INITIAL_DATA_UPDATED_AT,
         }
       : {}),
     placeholderData: (previousData) => previousData,

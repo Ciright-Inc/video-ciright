@@ -3,6 +3,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchWatchHistoryPage } from "@/lib/api/watch-history";
 import type { WatchHistoryPage } from "@/lib/profile/watchHistoryPage";
+import { INITIAL_DATA_UPDATED_AT } from "@/lib/queries/initial-data-timestamp";
 import { profileQueryOptions } from "@/lib/queries/profile-query-options";
 
 export const watchHistoryKeys = {
@@ -20,7 +21,7 @@ export function useWatchHistoryInfinite(initialPage?: WatchHistoryPage) {
     ...(initialPage
       ? {
           initialData: { pages: [initialPage], pageParams: [1] },
-          initialDataUpdatedAt: Date.now(),
+          initialDataUpdatedAt: INITIAL_DATA_UPDATED_AT,
         }
       : {}),
     placeholderData: (previousData) => previousData,

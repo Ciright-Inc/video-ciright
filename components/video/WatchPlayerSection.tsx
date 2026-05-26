@@ -25,11 +25,15 @@ export function WatchPlayerSection({
 }: WatchPlayerSectionProps) {
   const [status, setStatus] = useState(initialStatus);
   const [playbackUrl, setPlaybackUrl] = useState(src);
-
-  useEffect(() => {
+  const [syncedProps, setSyncedProps] = useState({ initialStatus, src });
+  if (
+    syncedProps.initialStatus !== initialStatus ||
+    syncedProps.src !== src
+  ) {
+    setSyncedProps({ initialStatus, src });
     setStatus(initialStatus);
     setPlaybackUrl(src);
-  }, [initialStatus, src]);
+  }
 
   useEffect(() => {
     if (status !== "PROCESSING") return;

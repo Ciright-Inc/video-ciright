@@ -4,10 +4,12 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
 } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, Copy, Link2, Share2 } from "lucide-react";
@@ -74,10 +76,15 @@ interface ShareMenuProps {
 
 export function ShareMenu({ videoId, title }: ShareMenuProps) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
+  const mounted = useIsMounted();
+  const shareUrl = useMemo(
+    () =>
+      mounted ? getWatchUrl(videoId, window.location.origin) : "",
+    [mounted, videoId]
+  );
+  const hasNativeShare =
+    mounted && typeof navigator.share === "function";
   const [copied, setCopied] = useState(false);
-  const [hasNativeShare, setHasNativeShare] = useState(false);
   const [placement, setPlacement] = useState<SharePlacement>("above");
   const [panelStyle, setPanelStyle] = useState<CSSProperties>({ visibility: "hidden" });
 
@@ -85,12 +92,6 @@ export function ShareMenu({ videoId, title }: ShareMenuProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    setMounted(true);
-    setShareUrl(getWatchUrl(videoId, window.location.origin));
-    setHasNativeShare(typeof navigator.share === "function");
-  }, [videoId]);
 
   const updatePanelPosition = useCallback(() => {
     const trigger = triggerRef.current;

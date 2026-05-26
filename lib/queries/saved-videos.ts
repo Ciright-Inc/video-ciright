@@ -3,6 +3,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchSavedVideosPage } from "@/lib/api/saved-videos";
 import type { SavedVideosPage } from "@/lib/profile/savedVideosPage";
+import { INITIAL_DATA_UPDATED_AT } from "@/lib/queries/initial-data-timestamp";
 import { profileQueryOptions } from "@/lib/queries/profile-query-options";
 
 export const savedVideosKeys = {
@@ -20,7 +21,7 @@ export function useSavedVideosInfinite(initialPage?: SavedVideosPage) {
     ...(initialPage
       ? {
           initialData: { pages: [initialPage], pageParams: [1] },
-          initialDataUpdatedAt: Date.now(),
+          initialDataUpdatedAt: INITIAL_DATA_UPDATED_AT,
         }
       : {}),
     placeholderData: (previousData) => previousData,

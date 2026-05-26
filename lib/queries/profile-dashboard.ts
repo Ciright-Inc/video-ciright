@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchProfileDashboard } from "@/lib/api/profile-dashboard";
 import type { ProfileDashboardData } from "@/lib/profile/dashboardData";
+import { INITIAL_DATA_UPDATED_AT } from "@/lib/queries/initial-data-timestamp";
 import { profileQueryOptions } from "@/lib/queries/profile-query-options";
 
 export const profileDashboardKeys = {
@@ -15,7 +16,7 @@ export function useProfileDashboard(initialData?: ProfileDashboardData) {
     queryFn: fetchProfileDashboard,
     ...profileQueryOptions,
     ...(initialData
-      ? { initialData, initialDataUpdatedAt: Date.now() }
+      ? { initialData, initialDataUpdatedAt: INITIAL_DATA_UPDATED_AT }
       : {}),
     placeholderData: (previousData) => previousData,
   });

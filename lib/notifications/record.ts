@@ -34,7 +34,7 @@ function unreadGroupWhere(
 export async function recordNotification(
   input: RecordNotificationInput
 ): Promise<void> {
-  const { recipientId, type, actorId } = input;
+  const { recipientId, actorId } = input;
 
   if (recipientId === actorId) return;
 

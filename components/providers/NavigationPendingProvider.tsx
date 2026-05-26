@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -65,9 +64,8 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  useEffect(() => {
-    setPendingHref(null);
-  }, [pathname]);
+  const activePendingHref =
+    pendingHref && pathnameOf(pendingHref) !== pathname ? pendingHref : null;
 
   const startNavigation = useCallback(
     (href: string) => {
@@ -80,8 +78,8 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   );
 
   const value = useMemo(
-    () => ({ pendingHref, startNavigation }),
-    [pendingHref, startNavigation]
+    () => ({ pendingHref: activePendingHref, startNavigation }),
+    [activePendingHref, startNavigation]
   );
 
   return (

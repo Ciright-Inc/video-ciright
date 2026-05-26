@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ChannelGeoMetric } from "@prisma/client";
+import { ChannelGeoMetric, VideoStatus, Visibility } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getVideoById, incrementVideoViews } from "@/lib/data/videos";
@@ -66,24 +66,97 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { title, description, visibility, status } = body;
+  const {
+    title,
+    description,
+    visibility,
+    status,
+    thumbnailUrl,
+    tags,
+  } = body as {
+    title?: string;
+    description?: string | null;
+    visibility?: Visibility;
+    status?: VideoStatus;
+    thumbnailUrl?: string | null;
+    tags?: unknown;
+  };
 
   const existing = await prisma.video.findUnique({ where: { id } });
   if (!existing || existing.channelId !== session.user.channelId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const video = await prisma.video.update({
-    where: { id },
-    data: {
-      ...(title !== undefined && { title }),
-      ...(description !== undefined && { description }),
-      ...(visibility !== undefined && { visibility }),
-      ...(status !== undefined && { status }),
-    },
+  if (tags !== undefined && !Array.isArray(tags)) {
+    return NextResponse.json({ error: "tags must be an array" }, { status: 400 });
+  }
+
+  const normalizedTags =
+    tags === undefined
+      ? undefined
+      : [
+          ...new Set(
+            tags
+              .filter((t): t is string => typeof t === "string")
+              .map((t) => t.trim().toLowerCase())
+              .filter(Boolean)
+          ),
+        ];
+
+  const video = await prisma.$transaction(async (tx) => {
+    if (normalizedTags !== undefined) {
+      await tx.videoTag.deleteMany({ where: { videoId: id } });
+      if (normalizedTags.length > 0) {
+        const tagRecords = await Promise.all(
+          normalizedTags.map((name) =>
+            tx.tag.upsert({
+              where: { name },
+              create: { name },
+              update: {},
+            })
+          )
+        );
+        await tx.videoTag.createMany({
+          data: tagRecords.map((tag) => ({ videoId: id, tagId: tag.id })),
+        });
+      }
+    }
+
+    return tx.video.update({
+      where: { id },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(description !== undefined && { description }),
+        ...(visibility !== undefined && { visibility }),
+        ...(status !== undefined && { status }),
+        ...(thumbnailUrl !== undefined && { thumbnailUrl }),
+      },
+      include: {
+        tags: { select: { tag: { select: { name: true } } } },
+      },
+    });
   });
 
-  return NextResponse.json(video);
+  const thumbnailChanged =
+    thumbnailUrl !== undefined && existing.thumbnailUrl !== video.thumbnailUrl;
+  if (thumbnailChanged && existing.thumbnailUrl) {
+    const oldKey = tryExtractKeyFromPublicObjectUrl(existing.thumbnailUrl);
+    const newKey = video.thumbnailUrl
+      ? tryExtractKeyFromPublicObjectUrl(video.thumbnailUrl)
+      : null;
+    if (oldKey && oldKey !== newKey) {
+      try {
+        await deleteObject(oldKey);
+      } catch (err) {
+        console.error("Failed to delete replaced video thumbnail:", oldKey, err);
+      }
+    }
+  }
+
+  return NextResponse.json({
+    ...video,
+    tags: video.tags.map((vt) => vt.tag.name),
+  });
 }
 
 export async function DELETE(_request: Request, { params }: RouteParams) {

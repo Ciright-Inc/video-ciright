@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
-  useState,
 } from "react";
+import { useLocalStorageBoolean } from "@/hooks/use-local-storage-boolean";
 
 interface SidebarContextValue {
   collapsed: boolean;
@@ -16,34 +15,24 @@ interface SidebarContextValue {
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsedState] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const [collapsed, setCollapsedState] = useLocalStorageBoolean(
+    SIDEBAR_COLLAPSED_KEY,
+    false
+  );
 
-  useEffect(() => {
-    const stored = localStorage.getItem("sidebar-collapsed");
-    if (stored !== null) setCollapsedState(stored === "true");
-    setHydrated(true);
-  }, []);
-
-  const setCollapsed = useCallback((value: boolean) => {
-    setCollapsedState(value);
-    localStorage.setItem("sidebar-collapsed", String(value));
-  }, []);
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      setCollapsedState(value);
+    },
+    [setCollapsedState]
+  );
 
   const toggle = useCallback(() => {
     setCollapsed(!collapsed);
   }, [collapsed, setCollapsed]);
-
-  if (!hydrated) {
-    return (
-      <SidebarContext.Provider
-        value={{ collapsed: false, toggle: () => {}, setCollapsed: () => {} }}
-      >
-        {children}
-      </SidebarContext.Provider>
-    );
-  }
 
   return (
     <SidebarContext.Provider value={{ collapsed, toggle, setCollapsed }}>
