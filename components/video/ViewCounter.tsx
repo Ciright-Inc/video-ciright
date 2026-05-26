@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { prependWatchHistoryCache } from "@/lib/queries/profile-cache";
+import type { WatchHistoryEntry } from "@/lib/profile/watchHistoryPage";
 
 function hasCountedView(videoId: string): boolean {
   try {
@@ -21,6 +24,7 @@ function markViewCounted(videoId: string): void {
 
 export function ViewCounter({ videoId }: { videoId: string }) {
   const { data: session, status } = useSession();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (hasCountedView(videoId)) return;
@@ -40,8 +44,18 @@ export function ViewCounter({ videoId }: { videoId: string }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ videoId }),
-    }).catch(() => {});
-  }, [videoId, status, session?.user?.id]);
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          entry?: WatchHistoryEntry | null;
+        };
+        if (data.entry) {
+          prependWatchHistoryCache(queryClient, data.entry);
+        }
+      })
+      .catch(() => {});
+  }, [videoId, status, session?.user?.id, queryClient]);
 
   return null;
 }

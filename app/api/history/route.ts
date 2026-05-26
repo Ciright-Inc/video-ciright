@@ -3,6 +3,7 @@ import { ChannelGeoMetric } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recordWatchHistory } from "@/lib/profile/recordWatchHistory";
+import { getWatchHistoryEntryForVideo } from "@/lib/profile/watchHistoryEntry";
 import { isMissingWatchHistoryTableError } from "@/lib/prisma-errors";
 import { recordChannelGeoEvent } from "@/lib/analytics/recordChannelGeoEvent";
 import { getWatchHistoryPage } from "@/lib/profile/watchHistoryPage";
@@ -48,7 +49,8 @@ export async function POST(request: Request) {
     session.user.id
   );
 
-  return NextResponse.json({ ok: true });
+  const entry = await getWatchHistoryEntryForVideo(session.user.id, videoId);
+  return NextResponse.json({ ok: true, entry });
 }
 
 export async function DELETE() {

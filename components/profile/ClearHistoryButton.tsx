@@ -1,13 +1,11 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { watchHistoryKeys } from "@/lib/queries/watch-history";
+import { clearWatchHistoryCache } from "@/lib/queries/profile-cache";
 
 export function ClearHistoryButton() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
 
@@ -17,8 +15,7 @@ export function ClearHistoryButton() {
     try {
       const res = await fetch("/api/history", { method: "DELETE" });
       if (!res.ok) throw new Error();
-      queryClient.removeQueries({ queryKey: watchHistoryKeys.all });
-      router.refresh();
+      clearWatchHistoryCache(queryClient);
     } finally {
       setLoading(false);
     }

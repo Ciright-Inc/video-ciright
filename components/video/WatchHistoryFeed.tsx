@@ -10,11 +10,11 @@ import {
   useWatchHistoryInfinite,
 } from "@/lib/queries/watch-history";
 
-interface WatchHistoryFeedProps {
-  initialPage: WatchHistoryPage;
-}
-
-export function WatchHistoryFeed({ initialPage }: WatchHistoryFeedProps) {
+export function WatchHistoryFeed({
+  initialPage,
+}: {
+  initialPage?: WatchHistoryPage;
+}) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =

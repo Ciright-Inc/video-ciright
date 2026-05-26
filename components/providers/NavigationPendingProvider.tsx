@@ -47,6 +47,20 @@ export function isNavigationPending(
   return pathnameOf(pendingHref) !== pathname;
 }
 
+export function isProfilePath(path: string): boolean {
+  const normalized = pathnameOf(path);
+  return normalized === "/profile" || normalized.startsWith("/profile/");
+}
+
+/** In-profile tab switches — chrome stays mounted; only page body skeletons. */
+export function isProfileSubnavigation(
+  pendingHref: string | null,
+  pathname: string
+): boolean {
+  if (!pendingHref || !isNavigationPending(pendingHref, pathname)) return false;
+  return isProfilePath(pathname) && isProfilePath(pendingHref);
+}
+
 export function NavigationPendingProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);

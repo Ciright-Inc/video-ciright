@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { patchProfileChannelCache } from "@/lib/queries/profile-cache";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
@@ -63,7 +64,7 @@ export function ChannelForm({
   channelId: string;
   initial: ChannelFormInitial;
 }) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const { update } = useSession();
   const [name, setName] = useState(initial.name);
   const [handle, setHandle] = useState(initial.handle);
@@ -141,9 +142,15 @@ export function ChannelForm({
       setBannerUrl(nextBannerUrl ?? "");
       setPendingAvatarFile(null);
       setPendingBannerFile(null);
+      patchProfileChannelCache(queryClient, {
+        name: name.trim(),
+        handle: handle.trim(),
+        description: description.trim() || null,
+        avatarUrl: nextAvatarUrl,
+        bannerUrl: nextBannerUrl,
+      });
       await update();
       toast.success("Channel settings saved");
-      router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Save failed";
       setError(message);

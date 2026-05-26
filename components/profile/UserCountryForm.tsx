@@ -1,6 +1,8 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
+import { patchProfileChannelCache } from "@/lib/queries/profile-cache";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
 import { CountrySelect } from "@/components/auth/CountrySelect";
@@ -11,6 +13,7 @@ export function UserCountryForm({
 }: {
   initialCountryCode: string | null;
 }) {
+  const queryClient = useQueryClient();
   const [countryCode, setCountryCode] = useState(initialCountryCode ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +41,7 @@ export function UserCountryForm({
       return;
     }
 
+    patchProfileChannelCache(queryClient, { countryCode });
     toast.success("Country updated");
   }
 

@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import {
   isNavigationPending,
+  isProfileSubnavigation,
   useNavigationPending,
 } from "@/components/providers/NavigationPendingProvider";
 import { RouteLoadingFallback } from "@/components/layout/RouteLoadingFallback";
@@ -13,10 +14,11 @@ export function MainContentArea({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { pendingHref } = useNavigationPending();
   const pending = isNavigationPending(pendingHref, pathname);
+  const profileBodyPending = isProfileSubnavigation(pendingHref, pathname);
 
   return (
     <div className="relative min-h-48">
-      {pending && pendingHref ? (
+      {pending && pendingHref && !profileBodyPending ? (
         <div
           key={pendingHref}
           className="animate-in fade-in duration-150"
@@ -27,7 +29,7 @@ export function MainContentArea({ children }: { children: ReactNode }) {
         </div>
       ) : null}
       <div
-        className={cn(pending && "sr-only")}
+        className={cn(pending && !profileBodyPending && "invisible")}
         aria-hidden={pending || undefined}
         inert={pending ? true : undefined}
       >
