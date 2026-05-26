@@ -1,4 +1,5 @@
 import { AuthFormPanel } from "@/components/auth/AuthFormPanel";
+import { productName } from "@/themes/theme.config";
 import LoginForm from "./LoginForm";
 
 type LoginPageProps = {
@@ -22,7 +23,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       subtitle={
         <>
           Sign in to continue building your{" "}
-          <span className="font-semibold text-primary">Ciright Video</span>{" "}
+          <span className="font-semibold text-primary">{productName}</span>{" "}
           channel.
         </>
       }

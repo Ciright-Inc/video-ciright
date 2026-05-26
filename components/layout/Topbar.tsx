@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { NavLink } from "@/components/layout/NavLink";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FormEvent, useState } from "react";
@@ -18,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/SidebarProvider";
 import { AvatarMenu } from "@/components/auth/AvatarMenu";
+import { productName } from "@/themes/theme.config";
 
 export function Topbar() {
   const router = useRouter();
@@ -49,11 +51,11 @@ export function Topbar() {
         <Link
           href="/"
           className="flex shrink-0 items-center gap-1 py-1.5 text-primary no-underline hover:no-underline"
-          aria-label="Ciright Video home"
+          aria-label={`${productName} home`}
         >
           <Logo className="size-7" />
           <span className="hidden text-lg font-semibold tracking-tight text-primary sm:inline">
-            Ciright Video
+            {productName}
           </span>
         </Link>
       </div>
@@ -97,7 +99,7 @@ export function Topbar() {
           <Search className="size-6" />
         </Link>
 
-        <Link
+        <NavLink
           href="/upload"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
@@ -108,7 +110,7 @@ export function Topbar() {
             <Plus className="size-3.5" />
           </span>
           <span className="hidden sm:inline">Create</span>
-        </Link>
+        </NavLink>
 
         {status === "loading" ? (
           <div className="ml-1 flex items-center gap-2">

@@ -3,6 +3,7 @@ import type { Theme } from "./theme.types";
 /** Tokens from keyra_theme.md — solid fills, no brand gradients. */
 export const keyraTheme: Theme = {
   name: "Keyra",
+  productName: "Keyra Videos",
 
   colors: {
     primary: "#000000",

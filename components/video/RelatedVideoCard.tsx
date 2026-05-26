@@ -83,7 +83,7 @@ function CardContent({
         </Thumb>
       </NavLink>
 
-      <TextBlock className="relative min-w-0 flex-1 pr-6" {...textProps}>
+      <TextBlock className="relative min-w-0 flex-1" {...textProps}>
         <NavLink href={`/watch/${video.id}`}>
           <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink transition-colors duration-300 group-hover:text-primary">
             {video.title}
@@ -101,23 +101,7 @@ function CardContent({
             addSuffix: true,
           })}
         </p>
-
-        <button
-          type="button"
-          aria-label="More actions"
-          className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity duration-300 hover:bg-surface-soft hover:text-ink group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          <MoreIcon />
-        </button>
       </TextBlock>
     </>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-    </svg>
   );
 }

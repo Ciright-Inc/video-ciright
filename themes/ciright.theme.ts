@@ -2,6 +2,7 @@ import type { Theme } from "./theme.types";
 
 export const cirightTheme: Theme = {
   name: "Ciright",
+  productName: "Ciright Video",
 
   colors: {
     primary: "#003087",

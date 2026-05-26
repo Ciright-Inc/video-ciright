@@ -1,5 +1,7 @@
 export interface Theme {
   name: string;
+  /** Full product name shown in header, auth, and metadata (e.g. "Keyra Videos"). */
+  productName: string;
   colors: {
     primary: string;
     primaryHover: string;
